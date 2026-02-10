@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PGMI Portal</title>
+    
+    <!-- PWA / Mobile App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#002366">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/RVVDxYb5/IMG_20211130_WA0002_124320.jpg">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/RVVDxYb5/IMG_20211130_WA0002_124320.jpg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Design System Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pgmi: {
+                            navy: '#002366', // Premium Royal Navy
+                            gold: '#D4AF37', // Classic Gold
+                            goldBright: '#FFDF00', // High-Gloss Gold
+                            umber: '#996515', // Umber (Used for accents/borders)
+                            slate: '#f8fafc',
+                            blueLight: '#eef2ff'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    spacing: {
+                        'safe': 'env(safe-area-inset-bottom)',
+                        'safe-top': 'env(safe-area-inset-top)'
+                    },
+                    animation: {
+                        'enter': 'enter 0.4s ease-out forwards',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'shimmer': 'shimmer 3s linear infinite',
+                        'toast-in': 'toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'toast-out': 'toastOut 0.3s ease-in forwards'
+                    },
+                    keyframes: {
+                        enter: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        slideIn: {
+                             '0%': { opacity: '0', transform: 'translateX(20px)' },
+                            '100%': { opacity: '1', transform: 'translateX(0)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% center' },
+                            '100%': { backgroundPosition: '200% center' },
+                        },
+                        toastIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-20px) scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+                        },
+                        toastOut: {
+                            '0%': { opacity: '1', transform: 'translateY(0)' },
+                            '100%': { opacity: '0', transform: 'translateY(-20px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; user-select: none; }
+        input, textarea, [contenteditable] { user-select: text; }
+        h1, h2, h3, .brand-font { font-family: 'Playfair Display', serif; }
+        
+        /* Sidebar Transitions */
+        .sidebar-transition { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .content-transition { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #D4AF37;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        body.modal-open { overflow: hidden; }
+
+        /* Full Screen Optimizations */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+
+        @keyframes pulse-shadow {
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+        .fab-pulse { animation: pulse-shadow 2s infinite; }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            @page { margin: 0.5cm; size: auto; }
+            html, body { height: auto !important; overflow: visible !important; background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print, button, input, select, aside, #mobile-nav, .filter-bar, #globalLoader, #toast-container, .fixed:not(#receiptModal) { display: none !important; }
+            body.print-mode-receipt #main-layout { display: none !important; }
+            body.print-mode-receipt #receiptModal { display: block !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; background: white !important; z-index: 9999; padding: 0 !important; overflow: visible !important; }
+            body.print-mode-receipt #receiptModal > div { box-shadow: none !important; border: 1px solid #ddd !important; margin: 0 auto !important; width: 100% !important; max-width: 100% !important; overflow: visible !important; max-height: none !important; }
+            body:not(.print-mode-receipt) #receiptModal { display: none !important; }
+            body:not(.print-mode-receipt) #main-layout { display: block !important; width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { padding: 4px 6px !important; border: 1px solid #ccc !important; text-align: left !important; color: black !important; }
+            thead { display: table-header-group; background-color: #f3f4f6 !important; }
+            tr { break-inside: avoid; }
+            .bg-white { box-shadow: none !important; border: none !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div id="app" class="min-h-screen relative pb-20 md:pb-0"></div>
+    <div id="toast-container" class="fixed top-safe left-0 right-0 z-[200] flex flex-col items-center gap-2 pointer-events-none p-4 mt-2"></div>
+
+    <script>
+        // ---------------------------------------------------------
+        // 1. CONFIGURATION & HELPERS
+        // ---------------------------------------------------------
+        const ASSETS = {
+            logo: "https://i.postimg.cc/RVVDxYb5/IMG_20211130_WA0002_124320.jpg"
+        };
+        
+        // Use the V5.0 Backend URL
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbJkJiS6ygI2K-mBbJuEV6jWccZ-MSdjHcV0cp46KsVTdbBYNkC3FgaFdE88y0MQvX/exec"; 
+
+        const Constitution = {
+            duesAmount: 10.00,
+            minMembershipMonths: 6,
+            penaltyThresholdMonths: 3, 
+            penaltyRate: 0.10, 
+            benefits: {
+                'Bereavement (Member)': 500.00,
+                'Wedding/Marriage': 200.00,
+                'Naming Ceremony': 100.00,
+                'Sickness (>5 days)': 50.00
+            }
+        };
+
+        const PERMISSIONS = {
+            'Master Admin':     { canViewDashboard: true, canViewMembers: true, canViewFinance: true, canViewGrowth: true, canManageStructure: true, allowedLedgers: ['General', 'Tithe', 'Welfare'], allowedCategories: ['Offering', 'Tithe', 'Welfare', 'Utilities', 'Donation', 'Project', 'Honorarium', 'Remittance', 'Benevolence'] },
+            'Finance Admin':    { canViewDashboard: true, canViewMembers: false, canViewFinance: true, canViewGrowth: false, canManageStructure: false, allowedLedgers: ['General', 'Tithe', 'Welfare'], allowedCategories: ['Offering', 'Tithe', 'Welfare', 'Utilities', 'Donation', 'Project', 'Honorarium', 'Remittance'] },
+            'Tithe Officer':    { canViewDashboard: true, canViewMembers: false, canViewFinance: true, canViewGrowth: false, canManageStructure: false, allowedLedgers: ['Tithe'], allowedCategories: ['Tithe', 'Honorarium', 'Remittance'] },
+            'Welfare Officer':  { canViewDashboard: true, canViewMembers: true, canViewFinance: true, canViewGrowth: false, canManageStructure: false, allowedLedgers: ['Welfare'], allowedCategories: ['Welfare', 'Benevolence'] },
+            'Offering Officer': { canViewDashboard: true, canViewMembers: false, canViewFinance: true, canViewGrowth: false, canManageStructure: false, allowedLedgers: ['General'], allowedCategories: ['Offering', 'Donation', 'Utilities', 'Project'] },
+            'Member':           { canViewPortal: true }
+        };
+
+        const getTodayDate = () => {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const DefaultData = {
+            members: [
+                { ID: 'MEM001', Name: 'Pastor John Doe', Phone: 'admin', Password: 'admin', Email: 'pastor@pgmi.com', Gender: 'Male', Role: 'Master Admin', Branch: 'Headquarters (Accra)', Status: 'Active', WelfareStatus: 'Good Standing', JoinDate: '2020-01-01', Occupation: 'Clergy', MaritalStatus: 'Married', DOB: '1980-05-15', Address: '123 Heaven St, Accra', BaptismStatus: 'Both', EmergencyContact: 'Mrs. Doe - 0244000000', Education: 'Post-Graduate', IsFamilyHead: true, SpouseID: 'MEM005', InvitedBy: null, Relatives: [{id: 'MEM005', relation: 'Wife'}] }
+            ],
+            finance: [],
+            growth: [],
+            notices: [],
+            requests: [],
+            branches: [
+                { ID: 'BR001', Name: 'Headquarters (Accra)', Location: 'Accra', HeadPastor: 'Senior Pastor', FoundedDate: '2020-01-01' },
+                { ID: 'BR002', Name: 'Kumasi Branch', Location: 'Kumasi', HeadPastor: '', FoundedDate: '2021-01-01' }
+            ],
+            departments: [
+                'Choir', 'Ushering', 'Protocol', 'Media', 'Evangelism', 'Sunday School', 'Prayer Force', 'Technical'
+            ]
+        };
+
+        const StorageEngine = {
+            getKeys() { return { MEMBERS: 'pgmi_db_members', FINANCE: 'pgmi_db_finance', GROWTH: 'pgmi_db_growth', NOTICES: 'pgmi_db_notices', REQUESTS: 'pgmi_db_requests', BRANCHES: 'pgmi_db_branches', DEPARTMENTS: 'pgmi_db_departments' }; },
+            init() {
+                const k = this.getKeys();
+                if (!localStorage.getItem(k.MEMBERS)) localStorage.setItem(k.MEMBERS, JSON.stringify(DefaultData.members));
+                if (!localStorage.getItem(k.FINANCE)) localStorage.setItem(k.FINANCE, JSON.stringify(DefaultData.finance));
+                if (!localStorage.getItem(k.GROWTH)) localStorage.setItem(k.GROWTH, JSON.stringify(DefaultData.growth));
+                if (!localStorage.getItem(k.NOTICES)) localStorage.setItem(k.NOTICES, JSON.stringify(DefaultData.notices));
+                if (!localStorage.getItem(k.REQUESTS)) localStorage.setItem(k.REQUESTS, JSON.stringify(DefaultData.requests));
+                if (!localStorage.getItem(k.BRANCHES)) localStorage.setItem(k.BRANCHES, JSON.stringify(DefaultData.branches));
+                if (!localStorage.getItem(k.DEPARTMENTS)) localStorage.setItem(k.DEPARTMENTS, JSON.stringify(DefaultData.departments));
+            },
+            get(key) { return JSON.parse(localStorage.getItem(key) || '[]'); },
+            set(key, data) { localStorage.setItem(key, JSON.stringify(data)); },
+            loadAll() {
+                const k = this.getKeys();
+                return {
+                    members: this.get(k.MEMBERS),
+                    finance: this.get(k.FINANCE),
+                    growth: this.get(k.GROWTH),
+                    notices: this.get(k.NOTICES),
+                    requests: this.get(k.REQUESTS),
+                    branches: this.get(k.BRANCHES),
+                    departments: this.get(k.DEPARTMENTS)
+                };
+            }
+        };
+        StorageEngine.init();
+
+        const API = {
+            connected: false,
+            
+            async call(action, payload = {}) {
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_")) {
+                    await new Promise(r => setTimeout(r, 600)); 
+                    return this.callLocal(action, payload);
+                } else {
+                    return this.callGoogle(action, payload);
+                }
+            },
+
+            // --- LOCAL STORAGE BACKEND (Fallback) ---
+            callLocal(action, payload) {
+                const DB = StorageEngine.loadAll();
+                const Keys = StorageEngine.getKeys();
+                switch(action) {
+                    case 'GET_CONFIG': return { success: true, branches: DB.branches, departments: DB.departments };
+                    case 'AUTH_LOGIN':
+                        // SMART MATCH: Check matches with or without leading zero
+                        const p = payload.phone.trim();
+                        const user = DB.members.find(m => {
+                            const dbP = String(m.Phone).trim();
+                            return dbP === p || dbP === '0' + p || '0' + dbP === p;
+                        });
+                        return (user && user.Password === payload.password.trim()) ? { success: true, user: user } : { success: false, message: 'Invalid credentials.' };
+                    case 'AUTH_REGISTER':
+                        if (DB.members.some(m => m.Phone.trim() === payload.phone.trim())) return { success: false, message: 'Phone already registered.' };
+                        const newMem = { ID: 'MEM'+(DB.members.length + 1).toString().padStart(3, '0'), Name: payload.name.trim(), Phone: payload.phone.trim(), Password: payload.password.trim(), Branch: payload.branch || 'Headquarters (Accra)', Role: 'Member', Status: 'Active', WelfareStatus: 'Not Enrolled', JoinDate: getTodayDate(), Relatives: [] };
+                        DB.members.push(newMem); StorageEngine.set(Keys.MEMBERS, DB.members);
+                        return { success: true, user: newMem, message: 'Account created successfully!' };
+                    case 'GET_DASHBOARD_DATA':
+                        return { success: true, data: { stats: this.calculateStats(DB.members, DB.finance, DB.growth), members: DB.members, finance: DB.finance, growth: DB.growth, notices: DB.notices, requests: DB.requests, branches: DB.branches, departments: DB.departments } };
+                    case 'ADD_MEMBER': DB.members.push({ ID: 'MEM'+(DB.members.length + 1).toString().padStart(3, '0'), ...payload, Relatives: [] }); StorageEngine.set(Keys.MEMBERS, DB.members); return { success: true, message: 'Member added' };
+                    case 'UPDATE_MEMBER': const idx = DB.members.findIndex(m => m.ID === payload.ID); if(idx !== -1) { DB.members[idx] = {...DB.members[idx], ...payload}; StorageEngine.set(Keys.MEMBERS, DB.members); return { success: true, message: 'Updated' }; } return { success: false };
+                    case 'DELETE_MEMBER': const dIdx = DB.members.findIndex(m => m.ID === payload.ID); if(dIdx !== -1) { DB.members.splice(dIdx,1); StorageEngine.set(Keys.MEMBERS, DB.members); return {success:true, message:'Deleted'}; } return {success:false};
+                    case 'ADD_TRANSACTION': DB.finance.unshift({ ID: 'TRX'+Date.now(), ...payload, Voided: false }); StorageEngine.set(Keys.FINANCE, DB.finance); return {success: true, message: 'Recorded'};
+                    case 'UPDATE_TRANSACTION': const tIdx = DB.finance.findIndex(t => t.ID === payload.ID); if(tIdx !== -1) { DB.finance[tIdx] = {...DB.finance[tIdx], ...payload}; StorageEngine.set(Keys.FINANCE, DB.finance); return {success:true, message:'Updated'}; } return {success:false};
+                    case 'DELETE_TRANSACTION': const dtIdx = DB.finance.findIndex(t => t.ID === payload.ID); if(dtIdx !== -1) { DB.finance.splice(dtIdx,1); StorageEngine.set(Keys.FINANCE, DB.finance); return {success:true, message:'Deleted'}; } return {success:false};
+                    case 'ADD_SOUL': DB.growth.push({ ID:'G'+Date.now(), Stage:'WIN', DateWon:getTodayDate(), LastContact:getTodayDate(), FoundationStep:0, ...payload }); StorageEngine.set(Keys.GROWTH, DB.growth); return {success:true, message:'Added'};
+                    case 'MOVE_SOUL': const sIdx = DB.growth.findIndex(g => g.ID === payload.ID); if(sIdx !== -1) { DB.growth[sIdx].Stage = payload.Stage; if(payload.FoundationStep) DB.growth[sIdx].FoundationStep = payload.FoundationStep; StorageEngine.set(Keys.GROWTH, DB.growth); return {success:true}; } return {success:false};
+                    case 'ADD_REQUEST': DB.requests.push({ ID: 'REQ'+Date.now(), Date: getTodayDate(), Status: 'Pending', ...payload }); StorageEngine.set(Keys.REQUESTS, DB.requests); return { success: true, message: 'Request Submitted' };
+                    case 'UPDATE_REQUEST': const rIdx = DB.requests.findIndex(r => r.ID === payload.ID); if(rIdx !== -1) { DB.requests[rIdx] = { ...DB.requests[rIdx], ...payload }; StorageEngine.set(Keys.REQUESTS, DB.requests); return { success: true, message: 'Updated' }; } return { success: false };
+                    case 'ADD_BRANCH': DB.branches.push({ ID: 'BR'+Date.now(), ...payload }); StorageEngine.set(Keys.BRANCHES, DB.branches); return { success: true, message: 'Branch Enlisted' };
+                    case 'UPDATE_BRANCH': const brIdx = DB.branches.findIndex(b => b.ID === payload.ID); if(brIdx !== -1) { DB.branches[brIdx] = { ...DB.branches[brIdx], ...payload }; StorageEngine.set(Keys.BRANCHES, DB.branches); return { success: true, message: 'Branch Updated' }; } return { success: false };
+                    case 'DELETE_BRANCH': const bIdx = DB.branches.findIndex(b => b.ID === payload.ID); if(bIdx !== -1) { DB.branches.splice(bIdx, 1); StorageEngine.set(Keys.BRANCHES, DB.branches); return {success:true, message:'Branch Deleted'}; } return {success:false};
+                    case 'ADD_DEPARTMENT': if(!DB.departments.includes(payload.Name)) { DB.departments.push(payload.Name); StorageEngine.set(Keys.DEPARTMENTS, DB.departments); } return { success: true, message: 'Department Added' };
+                    case 'DELETE_DEPARTMENT': const depIdx = DB.departments.indexOf(payload.Name); if(depIdx !== -1) { DB.departments.splice(depIdx, 1); StorageEngine.set(Keys.DEPARTMENTS, DB.departments); return { success: true, message: 'Department Deleted' }; } return { success: false };
+                    default: return { success: false, message: 'Action not supported locally' };
+                }
+            },
+
+            // --- GOOGLE SHEETS BACKEND ---
+            async callGoogle(action, payload) {
+                let securePayload = { ...payload };
+                if (action === 'AUTH_REGISTER' || action === 'ADD_MEMBER') securePayload = this.formatMemberPayload(securePayload);
+                for (const key in securePayload) { if (Array.isArray(securePayload[key]) || (typeof securePayload[key] === 'object' && securePayload[key] !== null)) securePayload[key] = JSON.stringify(securePayload[key]); }
+
+                const requestOptions = { method: 'POST', body: JSON.stringify({ action, ...securePayload }), headers: { "Content-Type": "text/plain" } };
+
+                try {
+                    const fetchPromise = fetch(GOOGLE_SCRIPT_URL, requestOptions);
+                    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out.")), 10000)); // Increased to 10s
+                    const response = await Promise.race([fetchPromise, timeoutPromise]);
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        this.connected = true;
+                        this.updateConnectionStatus();
+                        if (action === 'GET_DASHBOARD_DATA' && data.data) {
+                             if(data.data.members) data.data.members = data.data.members.map(m => this.normalizeMemberKeys(m));
+                             if(data.data.finance) data.data.finance = data.data.finance.map(f => this.normalizeTransactionKeys(f));
+                        }
+                        if (data.user) {
+                            data.user = this.normalizeMemberKeys(data.user);
+                        }
+                        return data;
+                    } catch (e) {
+                        console.error("Invalid Server Response:", text);
+                        throw new Error("Server returned invalid JSON.");
+                    }
+                } catch (error) {
+                    console.warn("Google API failed, switching to Local Mode:", error);
+                    this.connected = false;
+                    this.updateConnectionStatus();
+                    return this.callLocal(action, payload);
+                }
+            },
+
+            formatMemberPayload(data) {
+                const genId = 'MEM' + Date.now().toString().slice(-6);
+                return {
+                    ID: data.ID && data.ID !== 'AUTO' ? data.ID : genId,
+                    Name: data.Name || data.name || '', Phone: data.Phone || data.phone || '', Password: data.Password || data.password || '',
+                    Branch: data.Branch || data.branch || 'Headquarters (Accra)', Role: data.Role || data.role || 'Member', Status: data.Status || 'Active',
+                    WelfareStatus: data.WelfareStatus || 'Not Enrolled', JoinDate: data.JoinDate || getTodayDate(),
+                    Occupation: data.Occupation || '', MaritalStatus: data.MaritalStatus || '', DOB: data.DOB || '', Address: data.Address || '',
+                    BaptismStatus: data.BaptismStatus || 'None', EmergencyContact: data.EmergencyContact || '', Education: data.Education || '',
+                    IsFamilyHead: (String(data.IsFamilyHead) === 'true' || data.IsFamilyHead === true), SpouseID: data.SpouseID || '',
+                    InvitedBy: data.InvitedBy || '', Relatives: data.Relatives || [], Dept: data.Dept || 'None'
+                };
+            },
+
+            normalizeMemberKeys(m) {
+                if(!m) return null;
+                const keys = Object.keys(m);
+                const get = (k) => {
+                    const match = keys.find(key => key.toLowerCase() === k.toLowerCase());
+                    return match ? m[match] : undefined;
+                };
+                
+                let role = get('role') || m.Role || 'Member';
+                let status = get('status') || m.Status || 'Active';
+                let branch = get('branch') || m.Branch || 'Headquarters (Accra)';
+                let welfare = get('welfarestatus') || get('welfare') || m.WelfareStatus || 'Not Enrolled';
+                
+                // AUTO-CORRECTION: If 'Role' has 'Active'/'Inactive', it's actually 'Status'
+                if (role === 'Active' || role === 'Inactive') {
+                    status = role; 
+                    const possibleRole = get('branch') || m.Branch;
+                    if (['Master Admin','Finance Admin','Tithe Officer','Member','Welfare Officer'].includes(possibleRole)) {
+                        role = possibleRole;
+                    } else {
+                        role = 'Member'; 
+                    }
+                }
+
+                const safeParse = (val) => {
+                    if (Array.isArray(val)) return val;
+                    if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
+                        try { return JSON.parse(val); } catch(e) { return []; }
+                    }
+                    return [];
+                };
+
+                return {
+                    ID: get('id') || m.ID || '',
+                    Name: get('name') || m.Name || '',
+                    Phone: get('phone') || m.Phone || '',
+                    Password: get('password') || m.Password || '',
+                    Email: get('email') || m.Email || '',
+                    Branch: branch,
+                    Gender: get('gender') || m.Gender || '',
+                    Role: role,
+                    Status: status,
+                    WelfareStatus: welfare,
+                    JoinDate: get('joindate') || m.JoinDate || '',
+                    Occupation: get('occupation') || m.Occupation || '',
+                    MaritalStatus: get('maritalstatus') || m.MaritalStatus || '',
+                    DOB: get('dob') || m.DOB || '',
+                    Address: get('address') || m.Address || '',
+                    BaptismStatus: get('baptismstatus') || m.BaptismStatus || 'None',
+                    EmergencyContact: get('emergencycontact') || m.EmergencyContact || '',
+                    Education: get('education') || m.Education || '',
+                    IsFamilyHead: (String(get('isfamilyhead')) === 'true' || get('isfamilyhead') === true),
+                    SpouseID: get('spouseid') || m.SpouseID || '',
+                    InvitedBy: get('invitedby') || m.InvitedBy || '',
+                    Relatives: safeParse(get('relatives') || m.Relatives),
+                    Dept: get('dept') || m.Dept || 'None'
+                };
+            },
+
+            normalizeTransactionKeys(t) {
+                if(!t) return null;
+                const keys = Object.keys(t);
+                const get = (k) => { const match = keys.find(key => key.toLowerCase() === k.toLowerCase()); return match ? t[match] : undefined; };
+                return {
+                    ID: get('id') || t.ID || '', Date: get('date') || t.Date || '', Type: get('type') || t.Type || 'Income',
+                    Category: get('category') || t.Category || 'Other', Amount: get('amount') || t.Amount || 0,
+                    Description: get('description') || t.Description || '', MemberID: get('memberid') || t.MemberID || '',
+                    Method: get('method') || t.Method || 'Cash', Reference: get('reference') || t.Reference || '',
+                    Voided: (String(get('voided')) === 'true' || get('voided') === true)
+                };
+            },
+            
+            updateConnectionStatus() {
+                const dot = document.getElementById('connectionDot');
+                if(dot) { dot.className = `w-2 h-2 rounded-full ${this.connected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`; dot.title = this.connected ? "System Online" : "System Offline/Connecting..."; }
+            },
+
+            calculateStats(members, finance, growth) {
+                return {
+                    totalMembers: members.length,
+                    activeMembers: members.filter(m => m.Status === 'Active').length,
+                    totalIncome: finance.filter(t => t.Type === 'Income' && !t.Voided).reduce((a,b) => a + Number(b.Amount), 0),
+                    totalExpense: finance.filter(t => t.Type === 'Expense' && !t.Voided).reduce((a,b) => a + Number(b.Amount), 0),
+                    growthPipeline: { welcome: growth.filter(g => g.Stage === 'WIN').length, retain: growth.filter(g => g.Stage === 'RETAIN').length, disciple: growth.filter(g => g.Stage === 'DISCIPLE').length, send: growth.filter(g => g.Stage === 'SEND').length }
+                };
+            }
+        };
+
+        // --- 2. STATE MANAGEMENT ---
+        const Store = {
+            user: JSON.parse(localStorage.getItem('pgmi_user') || 'null'),
+            view: 'login',
+            sidebarCollapsed: localStorage.getItem('pgmi_sidebar_collapsed') === 'true',
+            data: { members: [], finance: [], growth: [], notices: [], requests: [], branches: [], departments: [], stats: null },
+            filters: { memberSearch: '', memberStatus: 'All', search: '', period: 'Month', dateStart: '', dateEnd: '', type: 'All' },
+            activeLedger: 'General',
+
+            toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; localStorage.setItem('pgmi_sidebar_collapsed', this.sidebarCollapsed); Render(); },
+
+            async loadConfig() {
+                try {
+                    const res = await API.call('GET_CONFIG');
+                    if (res.success) {
+                        if(res.branches) this.data.branches = res.branches;
+                        if(res.departments) this.data.departments = res.departments;
+                        if (this.view === 'register') Render();
+                    }
+                } catch (e) { 
+                    const k = StorageEngine.getKeys();
+                    this.data.branches = StorageEngine.get(k.BRANCHES).length ? StorageEngine.get(k.BRANCHES) : DefaultData.branches;
+                    this.data.departments = StorageEngine.get(k.DEPARTMENTS).length ? StorageEngine.get(k.DEPARTMENTS) : DefaultData.departments;
+                }
+            },
+            
+            hardReset() {
+                if(!confirm("⚠️ FIX / RESET DATA\n\nThis will clear all local data and reload fresh from the server.\n\nUse this if you see misalignment (e.g. 'Role' showing as 'Active').\n\nProceed?")) return;
+                localStorage.clear();
+                window.location.reload();
+            },
+
+            async login(phone, password) {
+                this.setLoading(true);
+                try {
+                    // GHANA NUMBER FIX:
+                    // Backend (Sheets) often stores '055' as '55'. We prioritize the stripped version.
+                    let cleanPhone = phone.trim();
+                    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+
+                    // Attempt 1: Send without leading zero (Most likely to succeed based on your report)
+                    let res = await API.call('AUTH_LOGIN', { phone: cleanPhone, password });
+
+                    // Attempt 2: If failed, and user typed a zero, try WITH the zero (in case backend is text)
+                    if (!res.success && phone.trim().startsWith('0')) {
+                        console.log("Retrying with leading zero...");
+                        res = await API.call('AUTH_LOGIN', { phone: phone.trim(), password });
+                    }
+
+                    if (res.success) {
+                        this.user = res.user;
+                        localStorage.setItem('pgmi_user', JSON.stringify(this.user));
+                        this.setView(this.user.Role === 'Member' ? 'member_portal' : 'dashboard');
+                        showToast(`Welcome back, ${this.user.Name.split(' ')[0]}!`);
+                        await this.refreshData();
+                    } else { showToast(res.message, 'error'); }
+                } catch (e) { console.error(e); showToast("Login failed. Check your connection.", 'error'); } finally { this.setLoading(false); }
+            },
+
+            async register(name, phone, password, branch) {
+                this.setLoading(true);
+                try {
+                    const res = await API.call('AUTH_REGISTER', { name, phone, password, branch });
+                    if (res.success) { showToast(res.message); await this.login(phone, password); } else { showToast(res.message, 'error'); }
+                } catch (e) { showToast("Registration failed.", 'error'); } finally { this.setLoading(false); }
+            },
+
+            logout() {
+                this.user = null;
+                localStorage.removeItem('pgmi_user');
+                this.data = { members: [], finance: [], growth: [], notices: [], requests: [], branches: this.data.branches, departments: this.data.departments, stats: null }; 
+                this.setView('login');
+                this.loadConfig(); 
+                showToast("Signed out successfully");
+            },
+
+            async refreshData() {
+                if (!this.user) return;
+                this.setLoading(true);
+                try {
+                    const res = await API.call('GET_DASHBOARD_DATA');
+                    if (res.success) {
+                        const backendBranches = res.data.branches;
+                        const backendDepts = res.data.departments;
+                        const safeBranches = (backendBranches && backendBranches.length > 0) ? backendBranches : StorageEngine.get(StorageEngine.getKeys().BRANCHES);
+                        const safeDepts = (backendDepts && backendDepts.length > 0) ? backendDepts : StorageEngine.get(StorageEngine.getKeys().DEPARTMENTS);
+
+                        this.data = { ...this.data, ...res.data, branches: safeBranches, departments: safeDepts };
+                        const k = StorageEngine.getKeys();
+                        StorageEngine.set(k.BRANCHES, this.data.branches);
+                        StorageEngine.set(k.DEPARTMENTS, this.data.departments);
+                        
+                        if (!res.data.stats) this.data.stats = API.calculateStats(this.data.members, this.data.finance, this.data.growth);
+                        
+                        const freshUser = this.data.members.find(m => m.ID === this.user.ID);
+                        if(freshUser) { this.user = freshUser; localStorage.setItem('pgmi_user', JSON.stringify(this.user)); }
+
+                        Render();
+                        initCharts();
+                    }
+                } catch (e) { console.error("Data sync failed", e); showToast("Sync failed. Using offline data.", 'warning'); } finally { this.setLoading(false); }
+            },
+
+            setView(viewId) { this.view = viewId; Render(); if(viewId === 'finance') setTimeout(initCharts, 200); },
+            
+            // SMART FILTER UPDATE (Prevents keyboard dismissal)
+            updateFilter(key, value) { 
+                this.filters[key] = value;
+                if(key === 'memberSearch' || key === 'memberStatus') {
+                    const tbody = document.getElementById('membersTableBody');
+                    if(tbody) tbody.innerHTML = renderMembersRows();
+                } else if (key === 'search') {
+                    const tbody = document.getElementById('financeTableBody');
+                    if(tbody) tbody.innerHTML = renderFinanceRows();
+                } else {
+                    Render();
+                }
+            },
+            
+            setLedger(ledgerName) { this.activeLedger = ledgerName; Render(); },
+            applyDateFilter(period) {
+                this.filters.period = period;
+                const now = new Date();
+                const formatDate = (d) => d.toISOString().split('T')[0];
+                if (period === 'Week') { this.filters.dateStart = formatDate(new Date(now.setDate(now.getDate() - now.getDay()))); this.filters.dateEnd = formatDate(new Date()); } 
+                else if (period === 'Month') { this.filters.dateStart = formatDate(new Date(now.getFullYear(), now.getMonth(), 1)); this.filters.dateEnd = formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)); } 
+                else if (period === 'LastMonth') { this.filters.dateStart = formatDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)); this.filters.dateEnd = formatDate(new Date(now.getFullYear(), now.getMonth(), 0)); } 
+                else if (period === 'Year') { this.filters.dateStart = `${now.getFullYear()}-01-01`; this.filters.dateEnd = `${now.getFullYear()}-12-31`; } 
+                else if (period === 'All') { this.filters.dateStart = ''; this.filters.dateEnd = ''; }
+                Render();
+            },
+            checkEligibility(memberId) {
+                const member = this.data.members.find(m => m.ID === memberId);
+                if (!member) return { eligible: false, reason: 'Member not found' };
+                if (member.WelfareStatus !== 'Good Standing') return { eligible: false, reason: 'Not in Good Standing (Dues Arrears)' };
+                const monthsMembership = (new Date() - new Date(member.JoinDate)) / (1000 * 60 * 60 * 24 * 30);
+                if (monthsMembership < Constitution.minMembershipMonths) return { eligible: false, reason: `Probation Period (Joined < ${Constitution.minMembershipMonths} months ago)` };
+                return { eligible: true, reason: 'Eligible' };
+            },
+            setLoading(isLoading) { const loader = document.getElementById('globalLoader'); if (loader) loader.style.display = isLoading ? 'flex' : 'none'; },
+            toggleModal(modalId, show) { const modal = document.getElementById(modalId); if (show) { modal.classList.remove('hidden'); document.body.classList.add('modal-open'); } else { modal.classList.add('hidden'); document.body.classList.remove('modal-open'); } },
+            exportData(type) {
+                let csvContent = "data:text/csv;charset=utf-8,";
+                let data = [], headers = [];
+                if (type === 'MEMBERS') { headers = ["ID", "Name", "Phone", "Role", "Branch", "Status", "Welfare Status"]; data = this.data.members.map(m => [m.ID, m.Name, m.Phone, m.Role, m.Branch, m.Status, m.WelfareStatus]); } 
+                else if (type === 'FINANCE') { headers = ["Date", "ID", "Type", "Category", "Amount", "Description", "Voided"]; data = this.data.finance.map(f => [f.Date, f.ID, f.Type, f.Category, f.Amount, f.Description, f.Voided ? 'Yes' : 'No']); }
+                csvContent += headers.join(",") + "\r\n";
+                data.forEach(row => { csvContent += row.map(e => `"${String(e).replace(/"/g, '""')}"`).join(",") + "\r\n"; });
+                const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", `PGMI_${type}_EXPORT_${getTodayDate()}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            }
+        };
+
+        // --- 3. COMPONENTS ---
+        function Loader() { return `<div id="globalLoader" class="fixed inset-0 bg-white/50 backdrop-blur-sm z-[60] hidden items-center justify-center"><div class="bg-white p-4 rounded-xl shadow-xl flex items-center gap-3"><div class="loader"></div><span class="font-medium text-pgmi-navy">Processing...</span></div></div>`; }
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-pgmi-navy border-pgmi-gold' : (type === 'error' ? 'bg-red-600 border-red-400' : 'bg-orange-500 border-orange-300');
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border-l-4 text-white min-w-[300px] animate-toast-in ${bg}`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info')}" class="w-5 h-5 flex-shrink-0"></i>
+                <p class="text-sm font-medium">${message}</p>
+            `;
+            container.appendChild(toast);
+            if(window.lucide) lucide.createIcons();
+            setTimeout(() => {
+                toast.classList.remove('animate-toast-in');
+                toast.classList.add('animate-toast-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function MobileNav() { const user = Store.user; if(!user) return ''; const perms = PERMISSIONS[user.Role]; const items = []; if (user.Role === 'Member') { items.push({ id: 'member_portal', icon: 'layout', label: 'Home' }, { id: 'member_giving', icon: 'wallet', label: 'Giving' }, { id: 'member_profile', icon: 'user', label: 'Profile' }); } else { if(perms.canViewDashboard) items.push({ id: 'dashboard', icon: 'layout-dashboard', label: 'Dash' }); if(perms.canViewMembers) items.push({ id: 'members', icon: 'users', label: 'Members' }); if(perms.canViewFinance) items.push({ id: 'finance', icon: 'wallet', label: 'Finance' }); if(perms.canViewGrowth) items.push({ id: 'growth', icon: 'trending-up', label: 'Growth' }); if(perms.canManageStructure) items.push({ id: 'structure', icon: 'building-2', label: 'Structure' }); } return `<nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-around py-2 z-40 pb-safe shadow-lg">${items.map(item => `<button onclick="Store.setView('${item.id}')" class="flex flex-col items-center p-2 flex-1 ${Store.view === item.id ? 'text-pgmi-navy font-bold' : 'text-slate-400'}"><i data-lucide="${item.icon}" class="w-6 h-6 mb-1"></i><span class="text-[10px]">${item.label}</span></button>`).join('')}<button onclick="Store.logout()" class="flex flex-col items-center p-2 flex-1 text-red-400"><i data-lucide="log-out" class="w-6 h-6 mb-1"></i><span class="text-[10px]">Logout</span></button></nav>`; }
+
+        function Sidebar() {
+            if(!Store.user) return '';
+            const perms = PERMISSIONS[Store.user.Role] || PERMISSIONS['Member'];
+            const collapsed = Store.sidebarCollapsed;
+            let items = [];
+            if (Store.user.Role === 'Member') { items = [{ id: 'member_portal', label: 'My Portal', icon: 'layout' }, { id: 'member_giving', label: 'My Giving', icon: 'wallet' }, { id: 'member_profile', label: 'My Profile', icon: 'user' }]; } 
+            else { if(perms.canViewDashboard) items.push({ id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' }); if(perms.canViewMembers) items.push({ id: 'members', label: 'Membership', icon: 'users' }); if(perms.canViewFinance) items.push({ id: 'finance', label: 'Finance', icon: 'wallet' }); if(perms.canViewGrowth) items.push({ id: 'growth', label: 'Growth', icon: 'trending-up' }); if(perms.canManageStructure) items.push({ id: 'structure', label: 'Structure', icon: 'building-2' }); }
+
+            return `
+            <aside class="fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-30 sidebar-transition hidden md:flex flex-col shadow-sm ${collapsed ? 'w-20' : 'w-64'}">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between h-[73px] pt-safe pl-safe">
+                    <div class="flex items-center gap-3 overflow-hidden"><img src="${ASSETS.logo}" class="w-10 h-10 rounded-lg flex-shrink-0 object-cover shadow-sm">${!collapsed ? `<div class="overflow-hidden"><h1 class="font-bold text-pgmi-navy text-lg leading-none truncate">PGMI</h1><span class="text-[10px] text-slate-400 font-bold tracking-wider">PORTAL</span></div>` : ''}</div>
+                    <button onclick="Store.toggleSidebar()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 flex-shrink-0"><i data-lucide="${collapsed ? 'chevron-right' : 'chevron-left'}" class="w-5 h-5"></i></button>
+                </div>
+                <nav class="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
+                    ${items.map(item => `<button onclick="Store.setView('${item.id}')" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all group ${Store.view === item.id ? 'bg-pgmi-navy text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}" title="${collapsed ? item.label : ''}"><i data-lucide="${item.icon}" class="w-5 h-5 flex-shrink-0"></i>${!collapsed ? `<span class="font-medium text-sm truncate">${item.label}</span>` : ''}</button>`).join('')}
+                </nav>
+                <div class="p-3 border-t border-slate-100 pb-safe">
+                    ${!collapsed ? `<div class="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-slate-50"><div class="w-8 h-8 rounded-full bg-pgmi-goldDim text-white flex items-center justify-center font-bold text-xs flex-shrink-0">${Store.user.Name.charAt(0)}</div><div class="flex-1 overflow-hidden min-w-0"><p class="text-sm font-bold text-slate-700 truncate">${Store.user.Name}</p><p class="text-[10px] text-slate-500 truncate">${Store.user.Role}</p></div></div>` : ''}
+                    <button onclick="Store.logout()" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all group" title="Sign Out"><i data-lucide="log-out" class="w-5 h-5 flex-shrink-0"></i>${!collapsed ? `<span class="font-bold text-sm">Sign Out</span>` : ''}</button>
+                </div>
+            </aside>`;
+        }
+
+        // --- 4. VIEWS ---
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId); const icon = document.getElementById(iconId);
+            if (input.type === "password") { input.type = "text"; icon.innerHTML = '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>'; 
+            } else { input.type = "password"; icon.innerHTML = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'; }
+        }
+
+        function LoginView() {
+            return `<div class="min-h-screen bg-gradient-to-br from-[#001233] via-pgmi-navy to-[#001233] flex flex-col items-center justify-center p-4"><div class="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden animate-enter"><div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-pgmi-gold/20 rounded-full blur-3xl -z-10"></div><div class="text-center mb-8"><div class="w-24 h-24 bg-white/5 rounded-full mx-auto flex items-center justify-center mb-5 shadow-2xl border-2 border-pgmi-gold/50 overflow-hidden transform transition hover:scale-105 duration-300 p-1 relative group"><div class="absolute inset-0 rounded-full border border-white/30 opacity-50"></div><img src="${ASSETS.logo}" alt="PGMI Logo" class="w-full h-full rounded-full object-cover"></div><h2 class="text-3xl font-serif font-extrabold leading-none mb-2 animate-pulse bg-clip-text text-transparent bg-gradient-to-r from-pgmi-gold via-pgmi-goldBright to-pgmi-gold bg-[length:200%_auto] animate-[shimmer_3s_linear_infinite]">Precious God</h2><p class="text-[10px] uppercase tracking-[0.35em] text-white font-bold mb-8 opacity-90 drop-shadow-sm">Ministry International</p><div class="h-px w-16 bg-gradient-to-r from-transparent via-pgmi-gold to-transparent mx-auto mb-6 opacity-50"></div><h1 class="text-lg font-bold text-white mb-1 tracking-tight">Welcome Home</h1><p class="text-blue-200 text-xs font-light">Sign in to your account</p></div><form id="loginForm" onsubmit="event.preventDefault(); Store.login(this.phone.value, this.password.value)" class="space-y-4"><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Phone Number</label><div class="relative transition-all duration-300 transform group-focus-within:-translate-y-0.5"><div class="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-blue-300 border-r border-white/10"><i data-lucide="phone" class="w-4 h-4"></i></div><input type="tel" name="phone" pattern="[0-9]*" inputmode="numeric" placeholder="e.g. 0552222222" required class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-14 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright focus:bg-black/50 transition-all font-medium tracking-wide text-sm"></div></div><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Password</label><div class="relative transition-all duration-300 transform group-focus-within:-translate-y-0.5"><div class="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-blue-300 border-r border-white/10"><i data-lucide="lock" class="w-4 h-4"></i></div><input type="password" name="password" id="loginPass" placeholder="Enter password" required class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-14 pr-12 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright focus:bg-black/50 transition-all font-medium tracking-wide text-sm"><button type="button" onclick="togglePassword('loginPass', 'eyeIconLogin')" class="absolute right-0 top-0 bottom-0 w-12 flex items-center justify-center text-blue-300 hover:text-white"><svg id="eyeIconLogin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><div class="flex items-center justify-between text-xs text-blue-200 px-1 pt-1"><label class="flex items-center gap-2 cursor-pointer hover:text-white transition"><input type="checkbox" class="rounded border-white/20 bg-white/10 text-pgmi-gold focus:ring-0"><span>Remember me</span></label><button type="button" onclick="Store.toggleModal('forgotPasswordModal', true)" class="hover:text-pgmi-goldBright transition-colors font-semibold">Forgot Password?</button></div><button type="submit" class="w-full bg-gradient-to-r from-pgmi-gold to-pgmi-goldBright hover:from-white hover:to-white hover:text-pgmi-navy text-pgmi-navy font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-pgmi-gold/20 hover:shadow-xl transform active:scale-[0.98] flex items-center justify-center gap-2 group mt-2"><span>Sign In</span><i data-lucide="arrow-right" class="w-4 h-4 transition-transform group-hover:translate-x-1"></i></button></form><div class="mt-6 pt-6 border-t border-white/10 text-center"><p class="text-blue-200 text-xs mb-3">Don't have an account yet?</p><button onclick="Store.setView('register')" class="w-full bg-white/5 hover:bg-white/10 text-white border border-white/20 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center gap-2"><i data-lucide="user-plus" class="w-4 h-4"></i> Create New Account</button></div></div><p class="text-white/20 text-[10px] mt-6 font-mono">© ${new Date().getFullYear()} Precious God Ministry. Secured.</p></div>${Loader()}<div id="forgotPasswordModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm relative overflow-hidden"><button onclick="Store.toggleModal('forgotPasswordModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button><div class="text-center mb-6"><div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 text-pgmi-navy"><i data-lucide="key-round" class="w-6 h-6"></i></div><h3 class="font-bold text-lg text-pgmi-navy">Recovery Request</h3><p class="text-xs text-slate-500 mt-1">Submit your details to notify the Admin.</p></div><form onsubmit="handleForgotPassword(event)" class="space-y-4"><div><label class="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Full Name</label><input name="name" required placeholder="Enter your name" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div><label class="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Phone Number</label><input name="phone" required placeholder="e.g. 055..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div class="pt-2"><button type="submit" class="w-full bg-pgmi-navy hover:bg-blue-900 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition"><span>Send Request</span><i data-lucide="send" class="w-4 h-4"></i></button><p class="text-[10px] text-center text-slate-400 mt-3">For immediate access, please call the IT Dept.</p></div></form></div></div>`;
+        }
+
+        function RegisterView() {
+            const branches = Store.data.branches || []; 
+            return `<div class="min-h-screen bg-gradient-to-br from-[#001233] via-pgmi-navy to-[#001233] flex flex-col items-center justify-center p-4"><div class="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden animate-slide-in"><button onclick="Store.setView('login')" class="absolute top-4 left-4 text-blue-200 hover:text-white flex items-center gap-1 text-xs font-bold transition z-20"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back</button><div class="text-center mb-6 mt-2"><div class="w-16 h-16 bg-white/5 rounded-full mx-auto flex items-center justify-center mb-3 shadow-lg border border-pgmi-gold/30 p-0.5"><img src="${ASSETS.logo}" alt="PGMI Logo" class="w-full h-full rounded-full object-cover opacity-90"></div><h2 class="text-xl font-serif font-extrabold leading-none mb-1 bg-clip-text text-transparent bg-gradient-to-r from-pgmi-gold via-pgmi-goldBright to-pgmi-gold">Precious God</h2><h1 class="text-2xl font-bold text-white mb-1 tracking-tight mt-4">Create Account</h1><p class="text-blue-200 text-xs font-light">Join the PGMI Digital Portal</p></div><form onsubmit="event.preventDefault(); if(this.pass1.value !== this.pass2.value) { showToast('Passwords do not match', 'error'); return; } Store.register(this.name.value, this.phone.value, this.pass1.value, this.branch.value)" class="space-y-4"><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Full Name</label><input type="text" name="name" placeholder="John Doe" required class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright text-sm transition-all focus:bg-black/40"></div><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Phone Number</label><input type="tel" name="phone" pattern="[0-9]*" inputmode="numeric" placeholder="055..." required class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright text-sm transition-all focus:bg-black/40"></div><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Select Branch</label><select name="branch" class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright text-sm transition-all focus:bg-black/40"><option value="" disabled selected>Select your local assembly...</option>${branches.map(b => `<option value="${b.Name}" class="text-slate-800">${b.Name}</option>`).join('')}</select></div><div class="grid grid-cols-2 gap-3"><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Password</label><input type="password" name="pass1" placeholder="******" required class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright text-sm transition-all focus:bg-black/40"></div><div class="group"><label class="block text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-1 ml-1">Confirm</label><input type="password" name="pass2" placeholder="******" required class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-pgmi-goldBright text-sm transition-all focus:bg-black/40"></div></div><div class="pt-2"><button type="submit" class="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl transform active:scale-[0.98] flex items-center justify-center gap-2 group mt-2"><span>Register</span><i data-lucide="check-circle" class="w-4 h-4"></i></button></div></form></div></div>`;
+        }
+
+        function DashboardView() {
+            const { stats, requests } = Store.data;
+            if(!stats) return `<div class="p-8 text-center text-slate-500">Loading Dashboard...</div>`;
+            const net = stats.totalIncome - stats.totalExpense;
+            const pendingResets = (requests || []).filter(r => r.Type === 'Password Reset' && r.Status === 'Pending');
+
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"><div><h2 class="text-3xl font-bold text-pgmi-navy">Executive Dashboard</h2><p class="text-slate-500">Overview for ${Store.user.Role}</p></div><div class="flex gap-2 w-full md:w-auto"><button onclick="Store.refreshData()" class="flex-1 md:flex-none text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync</button><button onclick="Store.logout()" class="md:hidden text-sm bg-red-50 text-red-600 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 flex items-center gap-2 font-bold"><i data-lucide="log-out" class="w-4 h-4"></i> Sign Out</button></div></header>${pendingResets.length > 0 ? `<div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-8 animate-slide-in"><div class="flex items-center gap-2 mb-3"><div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600"><i data-lucide="alert-circle" class="w-5 h-5"></i></div><h3 class="font-bold text-orange-800">Pending Administrative Tasks (${pendingResets.length})</h3></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${pendingResets.map(req => { const phoneMatch = req.Content.match(/Phone: (.*?)\)/) || req.Content.match(/\d+/); const phone = phoneMatch ? phoneMatch[1] || phoneMatch[0] : ''; return `<div class="bg-white p-3 rounded-lg border border-orange-100 shadow-sm flex flex-col gap-2"><div><p class="text-xs font-bold text-slate-700">Password Reset Request</p><p class="text-xs text-slate-500 mt-1 truncate">${req.Content}</p><p class="text-[10px] text-slate-400 mt-1 font-mono">${req.Date}</p></div><div class="flex gap-2 mt-1"><button onclick="handleQuickReset('${req.ID}', '${phone}', '${req.Content}')" class="flex-1 text-xs bg-pgmi-navy text-white px-3 py-1.5 rounded font-bold hover:bg-blue-900 flex items-center justify-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Auto-Reset</button><button onclick="Store.setView('members'); Store.updateFilter('memberSearch', '${phone}');" class="text-xs border border-slate-200 text-slate-600 px-3 py-1.5 rounded font-bold hover:bg-slate-50">Manual</button></div></div>`; }).join('')}</div></div>` : ''}<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100"><p class="text-sm font-medium text-slate-500 mb-1">Total Members</p><h3 class="text-3xl font-bold text-slate-800">${stats.totalMembers}</h3><p class="text-xs text-green-600 mt-1">${stats.activeMembers} Active</p></div><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100"><p class="text-sm font-medium text-slate-500 mb-1">Net Position</p><h3 class="text-3xl font-bold text-slate-800">₵${net.toLocaleString()}</h3></div><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100"><p class="text-sm font-medium text-slate-500 mb-1">Pipeline</p><h3 class="text-3xl font-bold text-slate-800">${(stats.growthPipeline?.welcome || 0)}</h3></div></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100"><h3 class="font-bold text-slate-700 mb-4">Financial Trends</h3><div class="h-64"><canvas id="financeChart"></canvas></div></div><div class="bg-pgmi-navy text-white p-6 rounded-xl shadow-lg relative overflow-hidden flex flex-col justify-center text-center"><div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10"></div><h3 class="font-bold text-xl font-serif relative z-10 text-pgmi-gold">Verse of the Day</h3><p class="mt-4 italic text-blue-100 relative z-10">"And my God will meet all your needs..."</p><p class="mt-4 text-sm font-bold text-white/60 relative z-10">— Philippians 4:19</p></div></div></div>`;
+        }
+
+        function MemberPortalView() {
+            const user = Store.user;
+            const eligibility = Store.checkEligibility(user.ID);
+            const notices = Store.data.notices || [];
+            let journeyStep = 1; let journeyText = "Step 1: Saved"; let journeyPercent = 25;
+            if (user.BaptismStatus !== 'None') { journeyStep = 2; journeyText = "Step 2: Baptized"; journeyPercent = 50; }
+            if (user.BaptismStatus === 'Both') { journeyStep = 3; journeyText = "Step 3: Spirit Filled"; journeyPercent = 75; }
+            if (user.Dept !== 'None' && user.Dept) { journeyStep = 4; journeyText = "Step 4: Serving"; journeyPercent = 100; }
+            let householdHTML = '';
+            if (user.IsFamilyHead) {
+                const spouse = user.SpouseID ? Store.data.members.find(m => m.ID === user.SpouseID) : null;
+                const relatives = Store.data.members.filter(m => m.Relatives && m.Relatives.some(r => r.id === user.ID));
+                householdHTML = `<div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm md:col-span-2"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-pgmi-navy">My Household</h3><span class="bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">Family Head</span></div><div class="space-y-3">${spouse ? `<div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">${spouse.Name.charAt(0)}</div><div><p class="text-sm font-bold text-slate-700">${spouse.Name}</p><p class="text-[10px] text-slate-400">Spouse</p></div></div><span class="text-xs font-bold ${spouse.WelfareStatus === 'Good Standing' ? 'text-green-600' : 'text-red-500'}">${spouse.WelfareStatus}</span></div>` : ''}${relatives.map(r => `<div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">${r.Name.charAt(0)}</div><div><p class="text-sm font-bold text-slate-700">${r.Name}</p><p class="text-[10px] text-slate-400">Relative</p></div></div><span class="text-xs font-bold ${r.WelfareStatus === 'Good Standing' ? 'text-green-600' : 'text-red-500'}">${r.WelfareStatus}</span></div>`).join('')}${!spouse && relatives.length === 0 ? '<p class="text-sm text-slate-400 italic">No linked family members found.</p>' : ''}</div></div>`;
+            }
+            return `<div class="p-4 md:p-8 relative pb-24 md:pb-8 pt-safe"><header class="mb-8"><h2 class="text-3xl font-bold text-pgmi-navy">Shalom, ${user.Name.split(' ')[0]}</h2><p class="text-slate-500 mb-6">Welcome to your personal dashboard.</p>${notices.length > 0 ? `<div class="bg-gradient-to-r from-pgmi-navy to-[#050813] rounded-xl p-4 text-white shadow-lg relative overflow-hidden"><div class="absolute right-0 top-0 w-32 h-32 bg-pgmi-gold/10 rounded-full blur-2xl -mr-10 -mt-10"></div><div class="flex items-center gap-2 mb-2"><i data-lucide="bell" class="w-4 h-4 text-pgmi-gold"></i><span class="text-xs font-bold uppercase text-blue-200 tracking-wider">Church Notices</span></div><div class="flex overflow-x-auto gap-4 snap-x pb-2 scrollbar-hide">${notices.map(n => `<div class="min-w-[280px] snap-center bg-white/5 rounded-lg p-3 border border-white/10"><span class="text-[10px] text-pgmi-gold font-mono block mb-1">${n.Date} • ${n.Type}</span><h4 class="font-bold text-sm mb-1">${n.Title}</h4><p class="text-xs text-blue-100 leading-relaxed line-clamp-2">${n.Message}</p></div>`).join('')}</div></div>` : ''}</header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20"><div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition" onclick="openIDCard('${user.ID}')"><div class="absolute top-0 right-0 w-20 h-20 bg-slate-50 rounded-bl-full -mr-4 -mt-4 z-0"></div><div class="relative z-10"><div class="w-12 h-12 bg-pgmi-navy text-pgmi-gold rounded-full flex items-center justify-center mb-4 border border-slate-100"><i data-lucide="id-card" class="w-6 h-6"></i></div><h3 class="font-bold text-slate-800 text-lg mb-1">Digital ID</h3><p class="text-xs text-slate-500 mb-4">Access your official membership card.</p><span class="text-pgmi-navy text-xs font-bold flex items-center gap-1">View Card <i data-lucide="arrow-right" class="w-3 h-3"></i></span></div></div><div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm"><div class="flex justify-between items-start mb-4"><div><p class="text-slate-500 text-xs font-bold uppercase">Welfare Status</p><h3 class="text-xl font-bold ${user.WelfareStatus === 'Good Standing' ? 'text-green-600' : (user.WelfareStatus === 'Defaulter' ? 'text-red-500' : 'text-slate-500')}">${user.WelfareStatus}</h3></div><div class="bg-slate-50 p-2 rounded-full"><i data-lucide="activity" class="w-5 h-5 text-slate-400"></i></div></div><div class="text-xs p-2 rounded bg-slate-50 border border-slate-100 mb-3">${eligibility.eligible ? '<span class="text-green-600 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Eligible for benefits</span>' : `<span class="text-red-500 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> ${eligibility.reason}</span>`}</div><button onclick="Store.toggleModal('constitutionModal', true)" class="w-full text-center text-xs text-slate-500 hover:text-pgmi-navy border-t pt-2 mt-1">View Constitution & Benefits</button></div><div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm md:row-span-2"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-pgmi-navy">My Journey</h3><i data-lucide="map" class="w-5 h-5 text-slate-400"></i></div><div class="relative pt-2 pb-6"><div class="text-center mb-4"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full border-4 border-pgmi-gold/30 text-pgmi-navy font-bold text-xl mb-2">${journeyPercent}%</div><h4 class="font-bold text-slate-800">${journeyText}</h4><p class="text-xs text-slate-500">Spiritual Growth Track</p></div><div class="space-y-4 relative"><div class="absolute left-3 top-2 bottom-2 w-0.5 bg-slate-100 -z-10"></div><div class="flex gap-3 items-center"><div class="w-6 h-6 rounded-full ${user.JoinDate ? 'bg-pgmi-navy' : 'bg-slate-200'} border-2 border-white shadow-sm flex-shrink-0"></div><p class="text-xs ${user.JoinDate ? 'text-slate-700 font-medium' : 'text-slate-400'}">Salvation / Joined</p></div><div class="flex gap-3 items-center"><div class="w-6 h-6 rounded-full ${['Water Only', 'Both'].includes(user.BaptismStatus) ? 'bg-pgmi-navy' : 'bg-slate-200'} border-2 border-white shadow-sm flex-shrink-0"></div><p class="text-xs ${['Water Only', 'Both'].includes(user.BaptismStatus) ? 'text-slate-700 font-medium' : 'text-slate-400'}">Water Baptism</p></div><div class="flex gap-3 items-center"><div class="w-6 h-6 rounded-full ${user.Dept !== 'None' ? 'bg-pgmi-navy' : 'bg-slate-200'} border-2 border-white shadow-sm flex-shrink-0"></div><p class="text-xs ${user.Dept !== 'None' ? 'text-slate-700 font-medium' : 'text-slate-400'}">Serving in Dept (${user.Dept})</p></div></div>${journeyPercent < 100 ? `<button class="w-full mt-6 bg-pgmi-navy text-white py-2 rounded-lg text-xs font-bold hover:bg-[#050813]">Take Next Step</button>` : ''}</div></div>${householdHTML}</div><button onclick="Store.toggleModal('prayerRequestModal', true)" class="fixed bottom-20 md:bottom-8 right-4 md:right-8 bg-pgmi-gold text-pgmi-navy p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold z-40 fab-pulse group hover:scale-105 transition"><i data-lucide="message-circle" class="w-6 h-6"></i><span class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 whitespace-nowrap">Prayer Request</span></button></div>`;
+        }
+
+        function MemberGivingView() {
+            const user = Store.user;
+            const myTransactions = Store.data.finance.filter(t => t.MemberID === user.ID || (!t.MemberID && t.Description.includes(user.Name)));
+            const tithes = myTransactions.filter(t => t.Category === 'Tithe');
+            const welfare = myTransactions.filter(t => t.Category === 'Welfare');
+            const others = myTransactions.filter(t => t.Category !== 'Tithe' && t.Category !== 'Welfare');
+            const calcTotal = (arr) => arr.reduce((acc, t) => acc + (t.Type === 'Income' && !t.Voided ? Number(t.Amount) : 0), 0);
+            const totalTithe = calcTotal(tithes);
+            const totalWelfare = calcTotal(welfare);
+            const totalOther = calcTotal(others);
+            const renderTable = (title, items, icon, colorClass, bgClass) => `<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8"><div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"><h3 class="font-bold text-slate-700 flex items-center gap-2"><div class="w-8 h-8 rounded-full ${bgClass} flex items-center justify-center"><i data-lucide="${icon}" class="w-4 h-4 ${colorClass}"></i></div>${title}</h3><span class="text-xs font-bold text-slate-400 bg-white border border-slate-200 px-2 py-1 rounded-full">${items.length} Records</span></div><div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Date</th><th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Description</th><th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase text-right whitespace-nowrap">Amount</th></tr></thead><tbody class="divide-y divide-slate-100">${items.length ? items.map(t => `<tr class="hover:bg-slate-50 ${t.Voided ? 'opacity-50 line-through' : ''}"><td class="px-6 py-3 text-xs text-slate-500 font-mono whitespace-nowrap">${t.Date}</td><td class="px-6 py-3 text-sm text-slate-600">${t.Description} ${t.Voided ? '(VOID)' : ''}</td><td class="px-6 py-3 text-sm font-bold text-right ${colorClass}">₵${Number(t.Amount).toLocaleString()}</td></tr>`).join('') : `<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 text-xs italic">No records found for ${title}.</td></tr>`}</tbody></table></div></div>`;
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-6"><h2 class="text-2xl font-bold text-pgmi-navy">My Giving History</h2><p class="text-sm text-slate-500">Track your faithful contributions.</p></header><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"><div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div><div><p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Total Tithe</p><h3 class="text-2xl font-bold text-pgmi-navy">₵${totalTithe.toLocaleString()}</h3></div><div class="w-10 h-10 rounded-full bg-blue-50 text-pgmi-navy flex items-center justify-center relative z-10"><i data-lucide="percent" class="w-5 h-5"></i></div></div><div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-16 h-16 bg-green-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div><div><p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Total Welfare</p><h3 class="text-2xl font-bold text-green-700">₵${totalWelfare.toLocaleString()}</h3></div><div class="w-10 h-10 rounded-full bg-green-50 text-green-700 flex items-center justify-center relative z-10"><i data-lucide="heart-handshake" class="w-5 h-5"></i></div></div><div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-16 h-16 bg-yellow-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div><div><p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Offering / Others</p><h3 class="text-2xl font-bold text-pgmi-umber">₵${totalOther.toLocaleString()}</h3></div><div class="w-10 h-10 rounded-full bg-yellow-50 text-pgmi-umber flex items-center justify-center relative z-10"><i data-lucide="gift" class="w-5 h-5"></i></div></div></div><div class="animate-enter">${renderTable('Tithe Records', tithes, 'percent', 'text-pgmi-navy', 'bg-blue-50')}${renderTable('Welfare Dues', welfare, 'heart-handshake', 'text-green-600', 'bg-green-50')}${renderTable('Offering & Donations', others, 'gift', 'text-pgmi-umber', 'bg-yellow-50')}</div></div>`;
+        }
+
+        function MemberProfileView() {
+            const user = Store.user;
+            const inviter = Store.data.members.find(m => m.ID === user.InvitedBy);
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-6 flex justify-between items-center"><h2 class="text-2xl font-bold text-pgmi-navy">My Profile</h2><button onclick="Store.toggleModal('memberEditSelfModal', true)" class="text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-600 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4"></i> Edit Details</button></header><div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b border-slate-100 bg-slate-50/50"><div class="flex items-center gap-4"><div class="w-16 h-16 bg-pgmi-navy text-white rounded-full flex items-center justify-center text-2xl font-bold border-4 border-white shadow-md">${user.Name.charAt(0)}</div><div><h3 class="text-xl font-bold text-slate-800">${user.Name}</h3><p class="text-sm text-slate-500">${user.ID} • ${user.Role}</p></div></div></div><div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6"><div><h4 class="font-bold text-sm text-slate-400 uppercase mb-3">Personal</h4><div class="space-y-3 text-sm"><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Phone</span><span class="font-medium">${user.Phone}</span></div><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Branch</span><span class="font-medium">${user.Branch || 'Headquarters'}</span></div><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Occupation</span><span class="font-medium">${user.Occupation || '-'}</span></div><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Address</span><span class="font-medium text-right max-w-[60%]">${user.Address || '-'}</span></div></div></div><div><h4 class="font-bold text-sm text-slate-400 uppercase mb-3">Church</h4><div class="space-y-3 text-sm"><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Dept</span><span class="font-medium">${user.Dept}</span></div><div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Invited By</span><span class="font-medium">${inviter ? inviter.Name : '-'}</span></div></div></div></div><button onclick="Store.logout()" class="w-full mt-6 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl border border-red-100 flex items-center justify-center gap-2 transition"><i data-lucide="log-out" class="w-4 h-4"></i> Sign Out</button></div></div>`;
+        }
+
+        function MembersView() {
+             if(!PERMISSIONS[Store.user.Role].canViewMembers) return `<div class="p-8 text-center text-slate-500">Access Denied</div>`;
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"><h2 class="text-2xl font-bold text-pgmi-navy">Membership Directory</h2><div class="flex gap-2 w-full md:w-auto"><button onclick="Store.exportData('MEMBERS')" class="bg-white border border-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 flex-1 md:flex-none justify-center"><i data-lucide="download" class="w-4 h-4"></i> Export CSV</button><button onclick="Store.toggleModal('addMemberModal', true); openAddMemberModal();" class="bg-pgmi-gold hover:bg-[#a3864d] text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition flex-1 md:flex-none justify-center"><i data-lucide="user-plus" class="w-4 h-4"></i> Add Member</button></div></header><div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-4 flex flex-col md:flex-row gap-4 items-stretch md:items-center"><div class="flex-1 min-w-[200px] relative"><i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Search members..." value="${Store.filters.memberSearch}" oninput="Store.updateFilter('memberSearch', this.value)" class="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div class="w-full md:w-48"><select onchange="Store.updateFilter('memberStatus', this.value)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-pgmi-navy"><option value="All" ${Store.filters.memberStatus === 'All' ? 'selected' : ''}>All Statuses</option><option value="Good Standing" ${Store.filters.memberStatus === 'Good Standing' ? 'selected' : ''}>Good Standing</option><option value="Defaulter" ${Store.filters.memberStatus === 'Defaulter' ? 'selected' : ''}>Defaulters</option></select></div></div><div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">ID</th><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Name</th><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Role</th><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Branch</th><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Welfare</th><th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right whitespace-nowrap">Actions</th></tr></thead><tbody id="membersTableBody" class="divide-y divide-slate-100">${renderMembersRows()}</tbody></table></div></div></div>`;
+        }
+
+        function FinanceView() {
+            const role = Store.user.Role;
+            const perms = PERMISSIONS[role];
+            if(!perms.canViewFinance) return `<div class="p-8 text-center text-slate-500">Access Denied</div>`;
+            const allowedTabs = perms.allowedLedgers;
+            if (!allowedTabs.includes(Store.activeLedger)) Store.activeLedger = allowedTabs[0];
+            const currentTab = Store.activeLedger;
+            
+            // LEDGER CATEGORY MAPPING
+            const titheRelated = ['Tithe', 'Honorarium', 'Remittance'];
+            const welfareRelated = ['Welfare', 'Benevolence'];
+            
+            const transactions = Store.data.finance.filter(t => { 
+                // 1. Ledger Filtering
+                if (currentTab === 'Tithe') {
+                    if (!titheRelated.includes(t.Category)) return false;
+                } else if (currentTab === 'Welfare') {
+                    if (!welfareRelated.includes(t.Category)) return false;
+                } else if (currentTab === 'General') {
+                    // General shows everything NOT in Tithe or Welfare groups
+                    if (titheRelated.includes(t.Category) || welfareRelated.includes(t.Category)) return false;
+                }
+
+                // 2. Global Search Filtering
+                const search = Store.filters.search.toLowerCase(); 
+                let memberName = ''; 
+                if(t.MemberID) { 
+                    const m = Store.data.members.find(mem => mem.ID === t.MemberID); 
+                    if(m) memberName = m.Name.toLowerCase(); 
+                } 
+                if (search && !t.Description.toLowerCase().includes(search) && !t.Reference?.toLowerCase().includes(search) && !t.Category.toLowerCase().includes(search) && !memberName.includes(search)) return false; 
+                
+                // 3. Date & Type Filtering
+                if (Store.filters.dateStart && t.Date < Store.filters.dateStart) return false; 
+                if (Store.filters.dateEnd && t.Date > Store.filters.dateEnd) return false; 
+                if (Store.filters.type !== 'All' && t.Type !== Store.filters.type) return false; 
+                
+                return true; 
+            });
+
+            const totalIncome = transactions.filter(t => t.Type === 'Income' && !t.Voided).reduce((sum, t) => sum + Number(t.Amount), 0);
+            const totalExpense = transactions.filter(t => t.Type === 'Expense' && !t.Voided).reduce((sum, t) => sum + Number(t.Amount), 0);
+            const balance = totalIncome - totalExpense;
+            
+            // DYNAMIC ACTION PANEL: Specific buttons for each ledger
+            let actionPanel = '';
+            
+            if (currentTab === 'General') {
+                // GENERAL: Expenses like Utilities, Projects
+                actionPanel = `
+                <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 no-print animate-enter">
+                    <button onclick="openQuickAction('Expense', 'Utilities', 'Record Expense')" class="p-4 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold flex items-center justify-between group hover:bg-red-100 transition shadow-sm">
+                        <span class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center shadow-sm"><i data-lucide="receipt" class="w-5 h-5"></i></div> 
+                            Record Expense / Payment
+                        </span>
+                        <div class="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center group-hover:bg-white transition">
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </button>
+                </div>`;
+            } else if (currentTab === 'Tithe') {
+                // TITHE: Expenses like Honorariums, Remittances
+                 actionPanel = `
+                <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 no-print animate-enter">
+                    <button onclick="openQuickAction('Expense', 'Honorarium', 'Record Expenditure')" class="p-4 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold flex items-center justify-between group hover:bg-red-100 transition shadow-sm">
+                        <span class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center shadow-sm"><i data-lucide="banknote" class="w-5 h-5"></i></div> 
+                            Record Expenditure / Honorarium
+                        </span>
+                        <div class="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center group-hover:bg-white transition">
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </button>
+                </div>`;
+            } else if (currentTab === 'Welfare') { 
+                // WELFARE: Benefit Payouts
+                actionPanel = `
+                <div class="mb-6 grid grid-cols-1 gap-6 no-print animate-enter">
+                    <div class="bg-gradient-to-br from-pgmi-navy to-[#050813] rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-10 -mt-10 blur-3xl pointer-events-none"></div>
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 relative z-10 gap-4">
+                            <div>
+                                <h3 class="font-serif text-xl font-bold text-pgmi-gold flex items-center gap-2"><i data-lucide="heart-handshake" class="w-5 h-5"></i> Welfare Management</h3>
+                                <p class="text-blue-200 text-xs mt-1">Manage dues and payout constitution benefits.</p>
+                            </div>
+                             <button onclick="openDefaultersModal()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3 py-1.5 rounded-lg font-bold text-xs transition flex items-center gap-2">
+                                <i data-lucide="alert-circle" class="w-4 h-4 text-orange-400"></i> Check Defaulters
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                            <!-- Prominent Expense Button -->
+                            <button onclick="Store.toggleModal('benefitModal', true)" class="bg-white text-pgmi-navy p-3 rounded-lg font-bold text-sm shadow-lg hover:bg-blue-50 transition flex items-center justify-between group">
+                                <span class="flex items-center gap-2"><i data-lucide="heart" class="w-4 h-4 text-red-500 fill-current"></i> Process Benefit Payout</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                             <div class="flex items-center gap-3 overflow-x-auto text-xs text-blue-200 scrollbar-hide items-center">
+                                <span class="opacity-50 text-[10px] uppercase font-bold">Rates:</span>
+                                <span class="whitespace-nowrap bg-white/5 px-2 py-1 rounded">Wedding: ₵${Constitution.benefits['Wedding/Marriage']}</span>
+                                <span class="whitespace-nowrap bg-white/5 px-2 py-1 rounded">Funeral: ₵${Constitution.benefits['Bereavement (Member)']}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`; 
+            }
+
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print"><div><h2 class="text-2xl font-bold text-pgmi-navy">${currentTab} Ledger</h2><p class="text-slate-500">Restricted View: ${role}</p></div><div class="flex flex-wrap gap-2 w-full md:w-auto"><button onclick="Store.toggleModal('importModal', true)" class="bg-purple-600 text-white font-bold px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition flex-1 md:flex-none justify-center"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Migrate / Import</button><button onclick="window.print()" class="bg-white border border-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 flex-1 md:flex-none justify-center"><i data-lucide="printer" class="w-4 h-4"></i> Print Report</button><button onclick="Store.exportData('FINANCE')" class="bg-white border border-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 flex-1 md:flex-none justify-center"><i data-lucide="download" class="w-4 h-4"></i> Export CSV</button><button onclick="Store.toggleModal('addTransactionModal', true)" class="bg-pgmi-navy text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-[#050813] transition flex-1 md:flex-none justify-center"><i data-lucide="plus" class="w-4 h-4"></i> New Entry</button></div></header><div class="w-full overflow-x-auto pb-2 scrollbar-hide"><div class="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-slate-100 w-max mb-6 no-print">${allowedTabs.map(tab => `<button onclick="Store.setLedger('${tab}')" class="px-6 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${currentTab === tab ? 'bg-pgmi-gold text-white shadow-sm font-bold' : 'text-slate-500 hover:bg-slate-50'}">${tab}</button>`).join('')}</div></div><div class="filter-bar bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row flex-wrap gap-4 items-stretch md:items-center no-print"><div class="flex-1 min-w-[200px] relative"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Search by Name, Ref or Desc..." value="${Store.filters.search}" oninput="Store.updateFilter('search', this.value)" class="w-full pl-9 p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div class="w-full md:w-40"><select onchange="Store.applyDateFilter(this.value)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-600"><option value="All" ${Store.filters.period === 'All' ? 'selected' : ''}>All Time</option><option value="Week" ${Store.filters.period === 'Week' ? 'selected' : ''}>This Week</option><option value="Month" ${Store.filters.period === 'Month' ? 'selected' : ''}>This Month</option><option value="LastMonth" ${Store.filters.period === 'LastMonth' ? 'selected' : ''}>Last Month</option><option value="Year" ${Store.filters.period === 'Year' ? 'selected' : ''}>This Year</option><option value="Custom" ${Store.filters.period === 'Custom' ? 'selected' : ''}>Custom Range</option></select></div><div class="${Store.filters.period === 'Custom' ? 'flex' : 'hidden'} items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200"><input type="date" value="${Store.filters.dateStart}" onchange="Store.updateFilter('dateStart', this.value)" class="p-1 bg-transparent text-sm"><span class="text-slate-400 text-xs">-</span><input type="date" value="${Store.filters.dateEnd}" onchange="Store.updateFilter('dateEnd', this.value)" class="p-1 bg-transparent text-sm"></div><select onchange="Store.updateFilter('type', this.value)" class="p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-full md:w-auto"><option value="All" ${Store.filters.type === 'All' ? 'selected' : ''}>All Types</option><option value="Income" ${Store.filters.type === 'Income' ? 'selected' : ''}>Income (+)</option><option value="Expense" ${Store.filters.type === 'Expense' ? 'selected' : ''}>Expense (-)</option></select><button onclick="Store.applyDateFilter('All'); Store.updateFilter('search', ''); Store.updateFilter('type', 'All')" class="text-slate-500 hover:text-red-500 text-xs font-bold px-2">Reset</button></div>${actionPanel}<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><div class="flex justify-between items-center"><p class="text-xs text-slate-500 uppercase font-bold">Total Income</p><i data-lucide="trending-up" class="w-4 h-4 text-green-500"></i></div><p class="text-2xl font-bold text-green-600">+₵${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div><div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><div class="flex justify-between items-center"><p class="text-xs text-slate-500 uppercase font-bold">Total Expense</p><i data-lucide="trending-down" class="w-4 h-4 text-red-500"></i></div><p class="text-2xl font-bold text-red-500">-₵${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div><div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><div class="flex justify-between items-center"><p class="text-xs text-slate-500 uppercase font-bold">Net Balance</p><i data-lucide="wallet" class="w-4 h-4 text-pgmi-navy"></i></div><p class="text-2xl font-bold text-pgmi-navy">₵${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div></div><div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 border-b border-slate-200"><tr><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Date</th><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Ref #</th><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Category</th><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase min-w-[200px]">Description / Member</th><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Method</th><th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-right whitespace-nowrap">Amount</th></tr></thead><tbody id="financeTableBody" class="divide-y divide-slate-100">${renderFinanceRows()}</tbody></table></div></div></div>`;
+        }
+        
+        function GrowthView() {
+            if(!PERMISSIONS[Store.user.Role].canViewGrowth) return `<div class="p-4 md:p-8 text-center text-slate-500">Access Denied</div>`;
+            const totalSouls = Store.data.growth.length;
+            const retained = Store.data.growth.filter(g => g.Stage === 'DISCIPLE' || g.Stage === 'SEND').length;
+            const conversionRate = totalSouls ? Math.round((retained / totalSouls) * 100) : 0;
+            const needsAttention = Store.data.growth.filter(g => { const daysSince = (new Date() - new Date(g.LastContact)) / (1000 * 60 * 60 * 24); return daysSince > 3 && g.Stage !== 'SEND'; });
+            const Stages = [ { id: 'WIN', label: '1. WIN (New)', icon: 'users', color: 'bg-blue-100 text-blue-700 border-blue-200' }, { id: 'RETAIN', label: '2. RETAIN (Care)', icon: 'heart-handshake', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' }, { id: 'DISCIPLE', label: '3. DISCIPLE (Class)', icon: 'book-open', color: 'bg-purple-100 text-purple-700 border-purple-200' }, { id: 'SEND', label: '4. SEND (Worker)', icon: 'send', color: 'bg-green-100 text-green-700 border-green-200' } ];
+            return `<div class="p-4 md:p-8 h-screen flex flex-col bg-slate-50 pt-safe"><header class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"><div><h2 class="text-2xl font-bold text-pgmi-navy flex items-center gap-2"><i data-lucide="sprout" class="w-6 h-6 text-green-600"></i> The "Ladder of Life" System</h2><p class="text-slate-500 text-sm">Win • Retain • Disciple • Send</p></div><button onclick="Store.toggleModal('addSoulModal', true)" class="bg-pgmi-gold hover:bg-[#a3864d] text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg transition transform active:scale-95 w-full md:w-auto justify-center"><i data-lucide="user-plus" class="w-4 h-4"></i> Register New Soul</button></header><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 uppercase font-bold">Total Pipeline</p><h3 class="text-2xl font-bold text-slate-800">${totalSouls}</h3></div><div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i data-lucide="database" class="w-5 h-5"></i></div></div><div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between"><div><p class="text-xs text-slate-500 uppercase font-bold">Retention Rate</p><h3 class="text-2xl font-bold ${conversionRate > 50 ? 'text-green-600' : 'text-orange-500'}">${conversionRate}%</h3></div><div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div></div><div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex items-center justify-between relative overflow-hidden"><div class="absolute left-0 top-0 w-1 h-full bg-red-500"></div><div><p class="text-xs text-red-500 uppercase font-bold">Action Needed</p><h3 class="text-2xl font-bold text-red-600">${needsAttention.length}</h3><p class="text-[10px] text-red-400">Cold calls (>3 days)</p></div><div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500"><i data-lucide="phone-missed" class="w-5 h-5"></i></div></div></div><div class="flex-1 overflow-x-auto pb-4 scrollbar-hide"><div class="flex gap-4 h-full min-w-[1000px] md:min-w-0 md:w-full md:grid md:grid-cols-4">${Stages.map(stage => { const soulsInStage = Store.data.growth.filter(g => g.Stage === stage.id); return `<div class="flex-1 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm h-full max-h-[65vh] md:max-h-[calc(100vh-250px)] w-[280px] md:w-auto"><div class="p-3 border-b border-slate-100 flex justify-between items-center ${stage.color} bg-opacity-20 rounded-t-xl sticky top-0 bg-white z-10"><div class="flex items-center gap-2 font-bold text-sm"><i data-lucide="${stage.icon}" class="w-4 h-4"></i>${stage.label.split('(')[0]}</div><span class="text-xs font-bold bg-white px-2 py-0.5 rounded-full shadow-sm">${soulsInStage.length}</span></div><div class="p-3 space-y-3 overflow-y-auto flex-1 bg-slate-50/50">${soulsInStage.length ? soulsInStage.map(soul => { const isStale = (new Date() - new Date(soul.LastContact)) / (1000 * 60 * 60 * 24) > 3; return `<div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative">${isStale ? `<div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" title="Needs Follow-up"></div>` : ''}<div class="flex justify-between items-start mb-2"><div><h4 class="font-bold text-slate-800 text-sm truncate max-w-[140px]">${soul.Name}</h4><p class="text-[10px] text-slate-500 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${soul.AssignedTo.split(' ')[0]}</p></div><button onclick="openMoveSoulModal('${soul.ID}')" class="text-slate-300 hover:text-pgmi-navy p-1"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button></div>${stage.id === 'DISCIPLE' ? `<div class="w-full bg-slate-100 h-1.5 rounded-full mb-2 overflow-hidden"><div class="bg-purple-500 h-full" style="width: ${(soul.FoundationStep / 4) * 100}%"></div></div><p class="text-[10px] text-purple-600 font-bold mb-2">Foundation Class ${soul.FoundationStep}/4</p>` : ''}<div class="flex gap-2 mt-2 pt-2 border-t border-slate-50"><a href="tel:${soul.Phone}" class="flex-1 text-center py-1.5 rounded bg-green-50 text-green-700 text-xs font-bold hover:bg-green-100"><i data-lucide="phone" class="w-3 h-3 inline"></i> Call</a><button onclick="alert('Interaction logging feature coming soon!')" class="flex-1 text-center py-1.5 rounded bg-slate-50 text-slate-600 text-xs font-bold hover:bg-slate-100">Log</button></div><p class="text-[10px] text-slate-400 mt-2 italic truncate">"${soul.Notes}"</p></div>`; }).join('') : `<div class="text-center py-8 text-slate-300 text-xs italic">No souls in this stage</div>`}</div></div>`; }).join('')}</div></div></div>`;
+        }
+
+        function BranchesView() { 
+            if(!PERMISSIONS[Store.user.Role].canManageStructure) return `<div class="p-8 text-center text-slate-500">Access Denied</div>`;
+            return `<div class="p-4 md:p-8 pt-safe pb-24 md:pb-8"><header class="mb-8"><h2 class="text-2xl font-bold text-pgmi-navy">Structure Management</h2><p class="text-slate-500 text-sm">Manage church locations and ministry departments.</p></header><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i data-lucide="map-pin" class="w-5 h-5 text-pgmi-gold"></i> Local Assemblies</h3><button onclick="openAddBranchModal()" class="bg-white border border-slate-200 hover:bg-slate-50 text-pgmi-navy font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition">+ Enlist Branch</button></div><div class="space-y-4">${Store.data.branches.map(b => `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative group hover:shadow-md transition"><div class="flex items-start justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-pgmi-navy rounded-lg flex items-center justify-center flex-shrink-0"><i data-lucide="church" class="w-5 h-5"></i></div><div><h4 class="font-bold text-sm text-slate-800">${b.Name}</h4><p class="text-xs text-slate-500">${b.Location} • ${b.HeadPastor || 'No Pastor'}</p></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition"><button onclick="openEditBranch('${b.ID}')" class="text-slate-300 hover:text-blue-600 transition p-1" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="handleDeleteBranch('${b.ID}', '${b.Name}')" class="text-slate-300 hover:text-red-500 transition p-1" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div></div>`).join('')}${Store.data.branches.length === 0 ? `<div class="text-center py-8 text-slate-400 italic text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">No branches found.</div>` : ''}</div></div><div><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-pgmi-gold"></i> Ministry Departments</h3><button onclick="Store.toggleModal('addDepartmentModal', true)" class="bg-white border border-slate-200 hover:bg-slate-50 text-pgmi-navy font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition">+ Add Dept</button></div><div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="divide-y divide-slate-100">${Store.data.departments && Store.data.departments.length ? Store.data.departments.map(dept => `<div class="p-4 flex items-center justify-between group hover:bg-slate-50 transition"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-pgmi-gold"></div><span class="text-sm font-medium text-slate-700">${dept}</span></div><button onclick="handleDeleteDepartment('${dept}')" class="text-slate-300 hover:text-red-500 transition p-1 opacity-0 group-hover:opacity-100" title="Remove Department"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('') : `<div class="text-center py-8 text-slate-400 italic text-sm">No departments defined.</div>`}</div></div><p class="mt-4 text-[10px] text-slate-400 italic bg-blue-50 p-3 rounded text-blue-800 border border-blue-100"><i data-lucide="info" class="w-3 h-3 inline mr-1"></i> These departments will automatically appear in the dropdown menus when registering or editing members.</p></div></div></div>`;
+        }
+
+        // --- 5. HELPERS & EVENT HANDLERS ---
+        
+        function renderFinanceRows() {
+            const currentTab = Store.activeLedger;
+            const role = Store.user.Role;
+            const perms = PERMISSIONS[role] || PERMISSIONS['Member']; 
+            if(!perms || !perms.canViewFinance) return '';
+
+            // LEDGER CATEGORY MAPPING (Same logic as FinanceView for consistency)
+            const titheRelated = ['Tithe', 'Honorarium', 'Remittance'];
+            const welfareRelated = ['Welfare', 'Benevolence'];
+
+            const transactions = Store.data.finance.filter(t => {
+                if (currentTab === 'Tithe') {
+                    if (!titheRelated.includes(t.Category)) return false;
+                } else if (currentTab === 'Welfare') {
+                    if (!welfareRelated.includes(t.Category)) return false;
+                } else if (currentTab === 'General') {
+                    if (titheRelated.includes(t.Category) || welfareRelated.includes(t.Category)) return false;
+                }
+
+                const search = Store.filters.search.toLowerCase();
+                let memberName = '';
+                if(t.MemberID) { const m = Store.data.members.find(mem => mem.ID === t.MemberID); if(m) memberName = m.Name.toLowerCase(); }
+                if (search && !t.Description.toLowerCase().includes(search) && !t.Reference?.toLowerCase().includes(search) && !t.Category.toLowerCase().includes(search) && !memberName.includes(search)) return false;
+                if (Store.filters.dateStart && t.Date < Store.filters.dateStart) return false;
+                if (Store.filters.dateEnd && t.Date > Store.filters.dateEnd) return false;
+                if (Store.filters.type !== 'All' && t.Type !== Store.filters.type) return false;
+                return true;
+            });
+
+            if (transactions.length === 0) return `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 text-xs italic">No records found.</td></tr>`;
+
+            return transactions.map(t => {
+                const isIncome = t.Type === 'Income';
+                const memberName = t.MemberID ? (Store.data.members.find(m => m.ID === t.MemberID)?.Name || '') : '';
+                return `<tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openReceipt('${t.ID}')"><td class="px-4 py-3 text-xs font-mono text-slate-500 whitespace-nowrap">${t.Date}</td><td class="px-4 py-3 text-xs font-mono text-slate-400 whitespace-nowrap">${t.Reference || '-'}</td><td class="px-4 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap"><span class="bg-slate-100 px-2 py-1 rounded text-slate-600">${t.Category}</span></td><td class="px-4 py-3 text-xs font-semibold text-slate-600 min-w-[200px]"><div>${t.Description} ${t.Voided ? '<span class="text-red-500 font-bold border border-red-200 px-1 rounded text-[10px]">VOID</span>' : ''}</div>${memberName ? `<div class="text-xs text-blue-500 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${memberName}</div>` : ''}</td><td class="px-4 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap">${t.Method}</td><td class="px-4 py-3 text-xs font-bold ${isIncome ? 'text-green-600' : 'text-red-500'} text-right whitespace-nowrap">${isIncome ? '+' : '-'}₵${Number(t.Amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+            }).join('');
+        }
+
+        function openAddBranchModal() { const modal = document.getElementById('addBranchModal'); const form = modal.querySelector('form'); form.reset(); form.id.value = ''; modal.querySelector('h3').textContent = 'Enlist New Branch'; modal.querySelector('button[type="submit"]').textContent = 'Enlist Branch'; form.date.value = getTodayDate(); Store.toggleModal('addBranchModal', true); }
+        function openEditBranch(branchId) { const branch = Store.data.branches.find(b => b.ID === branchId); if(!branch) return; const modal = document.getElementById('addBranchModal'); const form = modal.querySelector('form'); form.id.value = branch.ID; form.name.value = branch.Name; form.location.value = branch.Location; form.pastor.value = branch.HeadPastor || ''; form.date.value = branch.FoundedDate ? new Date(branch.FoundedDate).toISOString().split('T')[0] : ''; modal.querySelector('h3').textContent = 'Edit Branch Details'; modal.querySelector('button[type="submit"]').textContent = 'Update Branch'; Store.toggleModal('addBranchModal', true); }
+        function handleAddBranch(e) { e.preventDefault(); const form = e.target; const isEdit = !!form.id.value; const payload = { Name: form.name.value, Location: form.location.value, HeadPastor: form.pastor.value, FoundedDate: form.date.value }; if (isEdit) { payload.ID = form.id.value; Store.setLoading(true); API.call('UPDATE_BRANCH', payload).then(res => { showToast(res.message); Store.toggleModal('addBranchModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); } else { payload.ID = 'BR' + Date.now(); Store.setLoading(true); API.call('ADD_BRANCH', payload).then(res => { showToast(res.message); Store.toggleModal('addBranchModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); } }
+        function handleDeleteBranch(id, name) { if(!confirm(`Are you sure you want to delete the branch: ${name}?\n\nThis action cannot be undone.`)) return; Store.setLoading(true); API.call('DELETE_BRANCH', { ID: id }).then(res => { showToast(res.message); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function handleAddDepartment(e) { e.preventDefault(); const form = e.target; const name = form.name.value.trim(); if(!name) return; Store.setLoading(true); API.call('ADD_DEPARTMENT', { Name: name }).then(res => { showToast(res.message); Store.toggleModal('addDepartmentModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function handleDeleteDepartment(name) { if(!confirm(`Are you sure you want to remove the '${name}' department?`)) return; Store.setLoading(true); API.call('DELETE_DEPARTMENT', { Name: name }).then(res => { showToast(res.message); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        async function handleQuickReset(reqId, phone, content) { if (!confirm(`⚡ AUTO-RESET\n\nAre you sure you want to reset the password for ${phone} to '1234' and mark this request as solved?`)) return; Store.setLoading(true); try { const member = Store.data.members.find(m => m.Phone.trim() === phone.trim()); if (!member) { showToast("Error: Member not found with phone " + phone + ". Please resolve manually.", 'error'); Store.setLoading(false); return; } await API.call('UPDATE_MEMBER', { ID: member.ID, Password: '1234' }); await API.call('UPDATE_REQUEST', { ID: reqId, Status: 'Resolved' }); Store.setLoading(false); if(confirm("✅ SUCCESS!\n\nPassword reset to '1234'.\n\nDo you want to send the new password to the member via WhatsApp?")) { const msg = `Shalom ${member.Name.split(' ')[0]}. Your PGMI Portal password has been reset to: 1234. Please login and change it.`; const url = `https://wa.me/233${phone.substring(1)}?text=${encodeURIComponent(msg)}`; window.open(url, '_blank'); } Store.refreshData(); } catch (e) { console.error(e); showToast("Automation failed: " + e.message, 'error'); Store.setLoading(false); } }
+        function handleForgotPassword(e) { e.preventDefault(); const form = e.target; const phone = form.phone.value; const name = form.name.value; const payload = { Type: 'Password Reset', Content: `Reset requested by ${name} (Phone: ${phone})`, Status: 'Pending', Date: getTodayDate() }; Store.setLoading(true); API.call('ADD_REQUEST', payload).then(res => { showToast("Request Sent! Admin notified."); Store.toggleModal('forgotPasswordModal', false); form.reset(); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function handleSelfUpdate(e) { e.preventDefault(); const form = e.target; const user = Store.user; const payload = { ID: user.ID, Phone: form.phone.value, Email: form.email.value, Address: form.address.value, Occupation: form.occupation.value, EmergencyContact: form.emergencyContact.value }; Store.setLoading(true); API.call('UPDATE_MEMBER', payload).then(res => { showToast("Profile Updated Successfully"); Store.user = { ...Store.user, ...payload }; localStorage.setItem('pgmi_user', JSON.stringify(Store.user)); Store.toggleModal('memberEditSelfModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function safeCreateIcons() { if (typeof lucide !== 'undefined' && lucide.createIcons) { lucide.createIcons(); } }
+        function openAddMemberModal(soulData = null) { const modal = document.getElementById('addMemberModal'); const form = modal.querySelector('form'); const title = modal.querySelector('h3'); form.reset(); form.joinDate.value = getTodayDate(); if (soulData) { title.innerHTML = `<span class="flex items-center gap-2"><i data-lucide="graduation-cap" class="w-6 h-6"></i> Soul Graduation: Registration</span>`; title.className = "font-bold text-lg text-green-700 mb-4 border-b border-green-200 pb-2"; form.name.value = soulData.Name; form.phone.value = soulData.Phone; const inviter = Store.data.members.find(m => m.Name.toLowerCase() === soulData.AssignedTo.toLowerCase()); if (inviter) form.invitedBy.value = inviter.ID; } else { title.textContent = "New Member Registration"; title.className = "font-bold text-lg text-pgmi-navy mb-4 border-b pb-2"; } Store.toggleModal('addMemberModal', true); safeCreateIcons(); }
+        function handleAddSoul(e) { e.preventDefault(); const form = e.target; const payload = { Name: form.soulName.value, Phone: form.soulPhone.value, AssignedTo: form.assignedTo.value, Notes: form.notes.value }; Store.setLoading(true); API.call('ADD_SOUL', payload).then(res => { showToast(res.message); Store.toggleModal('addSoulModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function openMoveSoulModal(soulId) { const soul = Store.data.growth.find(s => s.ID === soulId); if (!soul) return; const form = document.getElementById('moveSoulForm'); form.soulId.value = soul.ID; form.currentStage.value = soul.Stage; form.foundationStep.value = soul.FoundationStep || 0; const stepContainer = document.getElementById('foundationStepContainer'); const toggleStep = (val) => { if (val === 'DISCIPLE') stepContainer.classList.remove('hidden'); else stepContainer.classList.add('hidden'); }; form.currentStage.onchange = (e) => toggleStep(e.target.value); toggleStep(soul.Stage); Store.toggleModal('moveSoulModal', true); }
+        function handleMoveSoul(e) { e.preventDefault(); const form = e.target; const payload = { ID: form.soulId.value, Stage: form.currentStage.value, FoundationStep: Number(form.foundationStep.value) }; Store.setLoading(true); const soulToGraduate = Store.data.growth.find(s => s.ID === payload.ID); API.call('MOVE_SOUL', payload).then(res => { Store.toggleModal('moveSoulModal', false); Store.refreshData().then(() => { if (payload.Stage === 'SEND' && soulToGraduate) { setTimeout(() => { if(confirm(`🎉 Hallelujah! ${soulToGraduate.Name} has completed the Growth Track.\n\nProceed to add them to the Official Membership Register?`)) { openAddMemberModal(soulToGraduate); } }, 200); } }); }).finally(() => Store.setLoading(false)); }
+        
+        // --- UPDATED RECEIPT FUNCTION ---
+        function openReceipt(trxId) { 
+            const trx = Store.data.finance.find(t => t.ID === trxId); 
+            if (!trx) return; 
+            
+            document.body.classList.add('print-mode-receipt'); 
+            const isIncome = trx.Type === 'Income'; 
+
+            // Action Buttons Logic
+            const voidButton = trx.Voided 
+                ? `<button onclick="handleVoidTransaction('${trx.ID}', false)" class="flex-1 bg-green-50 text-green-700 hover:bg-green-100 py-2 rounded-lg text-xs font-bold border border-green-200 transition">Activate</button>`
+                : `<button onclick="handleVoidTransaction('${trx.ID}', true)" class="flex-1 bg-orange-50 text-orange-700 hover:bg-orange-100 py-2 rounded-lg text-xs font-bold border border-orange-200 transition">Void</button>`;
+
+            const html = `
+                <div class="text-center p-4 border-b border-dashed border-slate-300">
+                    <img src="${ASSETS.logo}" class="w-12 h-12 mx-auto mb-2 rounded-full">
+                    <h3 class="font-bold text-pgmi-navy text-lg">Precious God Ministry</h3>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest">Official Receipt</p>
+                </div>
+                <div class="py-6 space-y-4">
+                    <div class="flex justify-center">
+                        <span class="text-3xl font-bold ${isIncome ? 'text-green-600' : 'text-red-500'} ${trx.Voided ? 'line-through text-slate-400' : ''}">
+                            ₵${Number(trx.Amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </span>
+                    </div>
+                    ${trx.Voided ? '<div class="text-center text-red-500 font-bold border-2 border-red-500 rounded p-1 max-w-[100px] mx-auto uppercase text-xs">VOID</div>' : ''}
+                    <div class="grid grid-cols-2 gap-4 text-sm px-4">
+                        <div class="text-slate-500">Date</div><div class="text-right font-medium">${trx.Date}</div>
+                        <div class="text-slate-500">Category</div><div class="text-right font-medium">${trx.Category}</div>
+                        <div class="text-slate-500">Method</div><div class="text-right font-medium">${trx.Method}</div>
+                        <div class="text-slate-500">Reference</div><div class="text-right font-mono text-xs">${trx.Reference || '-'}</div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg mx-4 mt-2">
+                        <p class="text-xs text-slate-400 uppercase font-bold mb-1">Description</p>
+                        <p class="text-sm text-slate-800">${trx.Description}</p>
+                    </div>
+                </div>
+                
+                <!-- NEW ACTION FOOTER: Direct Delete/Void Access -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 no-print flex flex-col gap-3">
+                    <div class="flex gap-2 w-full">
+                        <button onclick="openEditTransaction('${trx.ID}')" class="flex-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 py-2 rounded-lg text-xs font-bold">Edit</button>
+                        ${voidButton}
+                        <button onclick="handleDeleteTransaction('${trx.ID}')" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 p-2 rounded-lg" title="Delete Permanently">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button onclick="window.print()" class="w-full bg-pgmi-navy text-white px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#050813] shadow-lg">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Print Receipt
+                    </button>
+                </div>`; 
+            
+            document.getElementById('receiptContent').innerHTML = html; 
+            Store.toggleModal('receiptModal', true); 
+            safeCreateIcons(); 
+        }
+        
+        function openEditTransaction(trxId) { 
+            const trx = Store.data.finance.find(t => t.ID === trxId); 
+            if (!trx) return; 
+            
+            if(!document.getElementById('receiptModal').classList.contains('hidden')) {
+                Store.toggleModal('receiptModal', false);
+            }
+
+            const form = document.querySelector('#editTransactionModal form'); 
+            if(!form) return;
+
+            form.id.value = trx.ID; 
+            form.date.value = trx.Date; 
+            form.amount.value = trx.Amount; 
+            form.description.value = trx.Description; 
+            form.reference.value = trx.Reference || ''; 
+            if(form.type) form.type.value = trx.Type; 
+            if(form.category) form.category.value = trx.Category; 
+            if(form.elements['method']) form.elements['method'].value = trx.Method; 
+            
+            // Clean up old buttons in Edit Modal just in case, though we prefer using Receipt actions now
+            const voidBtn = document.getElementById('btn-void-trx'); 
+            const deleteBtn = document.getElementById('btn-delete-trx');
+            
+            if (voidBtn) {
+                voidBtn.onclick = null; 
+                voidBtn.textContent = trx.Voided ? "Un-Void" : "Void";
+                voidBtn.className = trx.Voided ? "text-green-600 hover:bg-green-50 px-3 py-2 rounded font-bold text-xs" : "text-red-600 hover:bg-red-50 px-3 py-2 rounded font-bold text-xs";
+                voidBtn.onclick = (e) => { e.preventDefault(); handleVoidTransaction(trx.ID, !trx.Voided); };
+            }
+
+            if (deleteBtn) {
+                deleteBtn.onclick = null;
+                deleteBtn.onclick = (e) => { e.preventDefault(); handleDeleteTransaction(trx.ID); };
+            }
+
+            Store.toggleModal('editTransactionModal', true); 
+        }
+
+        function handleEditTransaction(e) { 
+            e.preventDefault(); 
+            const form = e.target; 
+            const payload = { ID: form.id.value, Date: form.date.value, Amount: Number(form.amount.value), Description: form.description.value, Reference: form.reference.value, Type: form.type.value, Category: form.category.value, Method: form.elements['method'].value }; 
+            Store.setLoading(true); 
+            API.call('UPDATE_TRANSACTION', payload).then(res => { 
+                if(res.success) {
+                    showToast(res.message); 
+                    Store.toggleModal('editTransactionModal', false); 
+                    Store.refreshData(); 
+                } else {
+                    showToast("Update Failed: " + res.message, 'error');
+                }
+            }).catch(err => showToast("Error: " + err.message, 'error')).finally(() => Store.setLoading(false)); 
+        }
+
+        function handleVoidTransaction(id, shouldVoid) { 
+            if(!id) return; 
+            if(!confirm(shouldVoid ? "Are you sure you want to VOID this transaction?\n\nIt will remain in records but won't count towards totals." : "Are you sure you want to ACTIVATE (Un-Void) this transaction?")) return; 
+            
+            Store.setLoading(true); 
+            API.call('UPDATE_TRANSACTION', { ID: id, Voided: shouldVoid }).then(res => { 
+                if(res.success) {
+                    showToast(shouldVoid ? "Transaction Voided" : "Transaction Activated"); 
+                    Store.toggleModal('editTransactionModal', false); 
+                    Store.toggleModal('receiptModal', false); // Close receipt too
+                    Store.refreshData(); 
+                } else {
+                    showToast("Action Failed: " + res.message, 'error');
+                }
+            }).catch(err => { 
+                showToast("Error: " + err.message, 'error'); 
+            }).finally(() => Store.setLoading(false)); 
+        }
+
+        function handleDeleteTransaction(id) { 
+            if(!id) return; 
+            if(!confirm("⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE this record?\n\nThis action cannot be undone.")) return; 
+            
+            Store.setLoading(true); 
+            API.call('DELETE_TRANSACTION', { ID: id }).then(res => { 
+                if(res.success) {
+                    showToast(res.message || "Deleted Successfully"); 
+                    Store.toggleModal('editTransactionModal', false); 
+                    Store.toggleModal('receiptModal', false); // Close receipt too
+                    Store.refreshData(); 
+                } else {
+                    showToast("Delete Failed: " + res.message, 'error');
+                }
+            }).catch(err => { 
+                showToast("Error: " + err.message, 'error'); 
+            }).finally(() => Store.setLoading(false)); 
+        }
+
+        function openQuickAction(type, category, title) {
+            const modal = document.getElementById('addTransactionModal'); const form = modal.querySelector('form'); form.reset(); form.date.value = getTodayDate();
+            form.type.value = type; form.category.value = category; toggleTransactionFields();
+            let iconClass = 'zap'; let colorClass = 'text-pgmi-navy';
+            if (category === 'Tithe') { iconClass = 'percent'; colorClass = 'text-blue-700'; } else if (category === 'Welfare') { iconClass = 'heart-handshake'; colorClass = 'text-purple-700'; } else if (type === 'Expense') { iconClass = 'receipt'; colorClass = 'text-red-700'; }
+            modal.querySelector('h3').innerHTML = `<span class="${colorClass} flex items-center gap-2"><i data-lucide="${iconClass}" class="w-5 h-5"></i> ${title}</span>`;
+            Store.toggleModal('addTransactionModal', true); safeCreateIcons();
+        }
+        function calculateDuesStatus(member) { if (member.WelfareStatus === 'Not Enrolled') return { expected: 0, paid: 0, arrears: 0, penalty: 0, totalOwed: 0, monthsOwed: 0, status: 'Not Enrolled' }; const joinDate = new Date(member.JoinDate); const now = new Date(); let months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth()); months = months < 0 ? 0 : months + 1; const expectedAmount = months * Constitution.duesAmount; const paidAmount = Store.data.finance.filter(t => t.Category === 'Welfare' && t.Type === 'Income' && !t.Voided && (t.MemberID === member.ID || t.Description.includes(member.Name))).reduce((sum, t) => sum + Number(t.Amount), 0); const arrears = expectedAmount - paidAmount; const monthsOwed = arrears / Constitution.duesAmount; let penalty = 0; if (monthsOwed > Constitution.penaltyThresholdMonths) { penalty = arrears * Constitution.penaltyRate; } return { expected: expectedAmount, paid: paidAmount, arrears: arrears, penalty: penalty, totalOwed: arrears + penalty, monthsOwed: monthsOwed, status: arrears > 0 ? 'Owing' : (arrears < 0 ? 'Credit' : 'Clean') }; }
+        function openDefaultersModal() { const tbody = document.getElementById('defaultersTableBody'); tbody.innerHTML = ''; Store.data.members.forEach(member => { const status = calculateDuesStatus(member); const isDefaulter = status.status === 'Owing'; const row = `<tr class="hover:bg-slate-50 text-sm"><td class="p-3 font-mono text-xs text-slate-500 whitespace-nowrap">${member.ID}</td><td class="p-3 font-medium whitespace-nowrap">${member.Name}</td><td class="p-3 text-right text-slate-500 whitespace-nowrap">₵${status.expected.toFixed(2)}</td><td class="p-3 text-right text-green-600 font-medium whitespace-nowrap">₵${status.paid.toFixed(2)}</td><td class="p-3 text-right ${isDefaulter ? 'text-red-600' : 'text-slate-400'} whitespace-nowrap">₵${status.arrears.toFixed(2)}</td><td class="p-3 text-right text-red-500 text-xs whitespace-nowrap">${status.penalty > 0 ? `+₵${status.penalty.toFixed(2)}` : '-'}</td><td class="p-3 text-right font-bold text-lg ${status.totalOwed > 0 ? 'text-pgmi-navy bg-red-50/50 border-l border-red-100' : 'text-slate-400 border-l border-slate-50'} whitespace-nowrap">₵${status.totalOwed.toFixed(2)}</td><td class="p-3 text-center whitespace-nowrap"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${isDefaulter ? 'bg-red-100 text-red-700' : (status.status === 'Not Enrolled' ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700')}">${status.status === 'Not Enrolled' ? 'N/A' : (isDefaulter ? `${Math.ceil(status.monthsOwed)} Mo.` : 'OK')}</span></td></tr>`; tbody.innerHTML += row; }); Store.toggleModal('defaultersModal', true); }
+        function checkBenefitEligibility() { const memberId = document.getElementById('benefitMember').value; const eventType = document.getElementById('benefitEvent').value; const statusDiv = document.getElementById('benefitStatus'); const amountInput = document.getElementById('benefitAmount'); if(!memberId) return; const check = Store.checkEligibility(memberId); const amount = Constitution.benefits[eventType] || 0; if (check.eligible) { statusDiv.innerHTML = `<span class="text-green-600 font-bold text-sm flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Eligible for Benefit</span>`; amountInput.value = amount; document.getElementById('benefitSubmit').disabled = false; } else { statusDiv.innerHTML = `<span class="text-red-500 font-bold text-sm flex items-center gap-2"><i data-lucide="x-circle" class="w-4 h-4"></i> ${check.reason}</span>`; amountInput.value = 0; document.getElementById('benefitSubmit').disabled = true; } safeCreateIcons(); }
+        function submitBenefit(e) { e.preventDefault(); const memberId = document.getElementById('benefitMember').value; const memberName = Store.data.members.find(m => m.ID === memberId)?.Name; const eventType = document.getElementById('benefitEvent').value; const amount = document.getElementById('benefitAmount').value; const payload = { date: getTodayDate(), type: 'Expense', category: 'Welfare', amount: amount, description: `Benefit: ${eventType} - ${memberName} (${memberId})` }; Store.setLoading(true); API.call('ADD_TRANSACTION', payload).then(res => { showToast("Benefit Processed Successfully"); Store.toggleModal('benefitModal', false); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function handleAddMember(e) { e.preventDefault(); const form = e.target; const payload = { Name: form.name.value, Phone: form.phone.value, Email: form.email.value, Branch: form.branch.value, Gender: form.gender.value, Role: form.role.value, Dept: form.dept.value, Occupation: form.occupation.value, MaritalStatus: form.maritalStatus.value, DOB: form.dob.value, Address: form.address.value, BaptismStatus: form.baptismStatus.value, EmergencyContact: form.emergencyContact.value, JoinDate: form.joinDate.value, InvitedBy: form.invitedBy.value, Education: form.education.value, IsFamilyHead: form.isFamilyHead.checked, SpouseID: form.spouseID.value, Status: 'Active', WelfareStatus: form.welfareStatus.value }; Store.setLoading(true); API.call('ADD_MEMBER', payload).then(res => { showToast(res.message); Store.toggleModal('addMemberModal', false); Store.refreshData(); }).catch(err => showToast(err.message, 'error')).finally(() => Store.setLoading(false)); }
+        function handleAddTransaction(e) { e.preventDefault(); const form = e.target; const category = form.category.value; const memberId = form.memberId ? form.memberId.value : null; let description = ''; if ((category === 'Tithe' || category === 'Welfare') && memberId) { const memberName = Store.data.members.find(m => m.ID === memberId)?.Name; description = `${category} - ${memberName}`; } else { if (memberId && !form.description.value) { const memberName = Store.data.members.find(m => m.ID === memberId)?.Name; description = `${category} - ${memberName}`; } else { description = form.description.value; } } const payload = { date: form.date.value, type: form.type.value, category: category, amount: form.amount.value, description: description, memberId: memberId, method: form.method.value, reference: form.reference.value, Voided: false }; Store.setLoading(true); API.call('ADD_TRANSACTION', payload).then(res => { showToast(res.message); Store.toggleModal('addTransactionModal', false); Store.refreshData(); }).catch(err => showToast(err.message, 'error')).finally(() => Store.setLoading(false)); }
+        function toggleTransactionFields() { const categorySelect = document.querySelector('#addTransactionModal select[name="category"]'); if (!categorySelect) return; const category = categorySelect.value; const memberField = document.getElementById('trxMemberField'); const descField = document.getElementById('trxDescField'); const memberSelect = document.querySelector('select[name="memberId"]'); const descInput = document.querySelector('input[name="description"]'); if (category === 'Tithe' || category === 'Welfare') { memberSelect.required = true; memberField.querySelector('label').textContent = "Member (Required for " + category + ")"; memberField.querySelector('label').classList.add('text-red-500'); descField.classList.add('hidden'); descInput.required = false; } else { memberSelect.required = false; memberField.querySelector('label').textContent = "Member Link (Optional)"; memberField.querySelector('label').classList.remove('text-red-500'); descField.classList.remove('hidden'); descInput.required = true; } }
+        function openMemberDetail(memberId) { const member = Store.data.members.find(m => m.ID === memberId); if (!member) return; const invitedBy = Store.data.members.find(m => m.ID === member.InvitedBy); const myStoredRelatives = member.Relatives || []; const linkedToMe = Store.data.members.filter(m => m.Relatives && m.Relatives.some(r => r.id === memberId)).map(m => ({ id: m.ID, relation: `(Linked by ${m.Name} as ${m.Relatives.find(r => r.id === memberId).relation})`, name: m.Name })); const spouse = member.SpouseID ? Store.data.members.find(m => m.ID === member.SpouseID) : null; const memberTrx = Store.data.finance.filter(t => t.MemberID === memberId || t.Description.includes(member.Name)); const totalTithe = memberTrx.filter(t => t.Category === 'Tithe' && t.Type === 'Income').reduce((a,b)=>a+Number(b.Amount),0); const totalWelfare = memberTrx.filter(t => t.Category === 'Welfare' && t.Type === 'Income').reduce((a,b)=>a+Number(b.Amount),0); const modalContent = `<div class="flex flex-col md:flex-row items-start gap-6 h-[75vh] md:h-[600px]"><div class="w-full md:w-1/3 text-center border-b md:border-b-0 md:border-r border-slate-100 pr-0 md:pr-4 pb-4 md:pb-0 h-full overflow-y-auto"><div class="w-24 h-24 bg-pgmi-navy text-white text-3xl font-bold flex items-center justify-center rounded-full mx-auto mb-4">${member.Name.charAt(0)}</div><h2 class="text-xl font-bold text-pgmi-navy">${member.Name}</h2><p class="text-slate-500 text-sm font-mono mb-2">${member.ID}</p><span class="px-2 py-1 ${member.WelfareStatus === 'Good Standing' ? 'bg-green-100 text-green-700' : (member.WelfareStatus === 'Defaulter' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')} rounded-full text-xs font-bold mb-2 inline-block">${member.Status}</span><div class="text-xs text-slate-400 mt-2">${member.Gender || '-'} • ${member.DOB ? new Date(member.DOB).getFullYear() : ''}</div><div class="mt-6 bg-blue-50 p-3 rounded-lg text-left"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Lifetime Giving</p><div class="flex justify-between text-xs mb-1"><span>Tithe:</span><span class="font-bold">₵${totalTithe.toLocaleString()}</span></div><div class="flex justify-between text-xs"><span>Welfare:</span><span class="font-bold">₵${totalWelfare.toLocaleString()}</span></div></div></div><div class="w-full md:w-2/3 h-full overflow-y-auto pr-2"><div class="flex border-b border-slate-200 mb-4 sticky top-0 bg-white z-10"><button onclick="document.getElementById('tabProfile').classList.remove('hidden'); document.getElementById('tabFinancial').classList.add('hidden');" class="px-4 py-2 text-sm font-bold text-pgmi-navy border-b-2 border-pgmi-navy">Profile</button><button onclick="document.getElementById('tabProfile').classList.add('hidden'); document.getElementById('tabFinancial').classList.remove('hidden');" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-pgmi-navy">Financial History</button></div><div id="tabProfile"><h4 class="font-bold text-sm text-pgmi-navy border-b pb-1 mb-2">Personal & Contact</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4"><div><span class="block text-slate-400 text-xs uppercase">Phone</span>${member.Phone}</div><div><span class="block text-slate-400 text-xs uppercase">Branch</span>${member.Branch || 'Headquarters'}</div><div><span class="block text-slate-400 text-xs uppercase">Occupation</span>${member.Occupation || '-'}</div><div><span class="block text-slate-400 text-xs uppercase">Address</span>${member.Address || '-'}</div><div><span class="block text-slate-400 text-xs uppercase">Marital Status</span>${member.MaritalStatus || '-'}</div><div><span class="block text-slate-400 text-xs uppercase">Education</span>${member.Education || '-'}</div><div class="md:col-span-2"><span class="block text-slate-400 text-xs uppercase">Emergency Contact</span>${member.EmergencyContact || '-'}</div></div><h4 class="font-bold text-sm text-pgmi-navy border-b pb-1 mb-2">Church & Spiritual</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4"><div><span class="block text-slate-400 text-xs uppercase">Role</span>${member.Role}</div><div><span class="block text-slate-400 text-xs uppercase">Dept</span>${member.Dept}</div><div><span class="block text-slate-400 text-xs uppercase">Join Date</span>${member.JoinDate || '-'}</div><div><span class="block text-slate-400 text-xs uppercase">Baptism</span>${member.BaptismStatus || 'None'}</div><div><span class="block text-slate-400 text-xs uppercase">Welfare</span>${member.WelfareStatus}</div></div><div class="pt-2 border-t border-slate-100"><h4 class="font-bold text-sm text-pgmi-navy mb-2 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4"></i> Lineage & Family</h4><div class="text-sm space-y-2"><p><span class="text-slate-400">Invited By:</span> ${invitedBy ? `<span class="font-bold text-blue-600 cursor-pointer" onclick="openMemberDetail('${invitedBy.ID}')">${invitedBy.Name}</span>` : 'Unknown'}</p><div class="bg-slate-50 p-2 rounded"><span class="text-xs text-slate-400 block mb-1">Family Connections</span>${spouse ? `<div class="text-xs mb-1">❤️ Spouse: <span class="font-bold text-pgmi-navy cursor-pointer" onclick="openMemberDetail('${spouse.ID}')">${spouse.Name}</span></div>` : ''}${myStoredRelatives.map(r => `<div class="text-xs mb-1">• ${r.relation}: <span class="font-bold cursor-pointer hover:text-blue-600" onclick="openMemberDetail('${r.id}')">${r.id}</span></div>`).join('')}${linkedToMe.map(r => `<div class="text-xs mb-1 text-slate-500">• ${r.relation} <span class="font-bold cursor-pointer hover:text-blue-600" onclick="openMemberDetail('${r.id}')">${r.name}</span></div>`).join('')}</div></div></div></div><div id="tabFinancial" class="hidden"><table class="w-full text-left"><thead class="bg-slate-50"><tr><th class="p-2 text-xs font-bold text-slate-500">Date</th><th class="p-2 text-xs font-bold text-slate-500">Cat</th><th class="p-2 text-xs font-bold text-slate-500 text-right">Amt</th></tr></thead><tbody class="divide-y divide-slate-100">${memberTrx.length ? memberTrx.map(t => `<tr><td class="p-2 text-xs font-mono text-slate-500">${t.Date}</td><td class="p-2 text-xs">${t.Category}</td><td class="p-2 text-xs font-bold text-right text-green-600">₵${Number(t.Amount).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3" class="p-4 text-center text-xs text-slate-400">No records found</td></tr>'}</tbody></table></div></div></div>`; document.getElementById('memberDetailContent').innerHTML = modalContent; Store.toggleModal('memberDetailModal', true); safeCreateIcons(); }
+        function openEditMember(memberId) { const member = Store.data.members.find(m => m.ID === memberId); if (!member) return; const form = document.querySelector('#editMemberModal form'); form.id.value = member.ID; form.name.value = member.Name; form.phone.value = member.Phone; form.email.value = member.Email || ''; form.gender.value = member.Gender || 'Male'; form.role.value = member.Role; form.dept.value = member.Dept; form.occupation.value = member.Occupation || ''; form.maritalStatus.value = member.MaritalStatus || 'Single'; form.dob.value = member.DOB || ''; form.address.value = member.Address || ''; form.baptismStatus.value = member.BaptismStatus || 'None'; form.emergencyContact.value = member.EmergencyContact || ''; form.joinDate.value = member.JoinDate || ''; form.status.value = member.Status; form.welfare.value = member.WelfareStatus; form.education.value = member.Education || 'None'; form.isFamilyHead.checked = member.IsFamilyHead || false; form.spouseID.value = member.SpouseID || ''; Store.toggleModal('editMemberModal', true); }
+        function confirmDeleteMember() { const id = document.querySelector('#editMemberModal input[name="id"]').value; if(!id) return; if(!confirm("⚠️ PERMANENT DELETE: Are you sure you want to remove this member from the registry?")) return; Store.setLoading(true); API.call('DELETE_MEMBER', { ID: id }).then(res => { showToast("Member successfully deleted."); Store.toggleModal('editMemberModal', false); Store.refreshData(); }).catch(err => { showToast("Error: " + err.message, 'error'); }).finally(() => Store.setLoading(false)); }
+        async function handleEditMember(e) { e.preventDefault(); const form = e.target; const payload = { ID: form.id.value, Name: form.name.value, Phone: form.phone.value, Email: form.email.value, Gender: form.gender.value, Role: form.role.value, Dept: form.dept.value, Occupation: form.occupation.value, MaritalStatus: form.maritalStatus.value, DOB: form.dob.value, Address: form.address.value, BaptismStatus: form.baptismStatus.value, EmergencyContact: form.emergencyContact.value, JoinDate: form.joinDate.value, Status: form.status.value, WelfareStatus: form.welfare.value, Education: form.education.value, IsFamilyHead: form.isFamilyHead.checked, SpouseID: form.spouseID.value }; if(form.newPassword && form.newPassword.value.trim() !== "") { payload.Password = form.newPassword.value.trim(); } const newRelId = form.newRelativeId.value; const newRelType = form.newRelativeType.value; if (newRelId && newRelType) { payload.NewRelative = { id: newRelId, relation: newRelType }; } Store.setLoading(true); try { const res = await API.call('UPDATE_MEMBER', payload); if(res.success) { showToast("Member details updated successfully."); Store.toggleModal('editMemberModal', false); form.newRelativeId.value = ''; if(form.newPassword) form.newPassword.value = ''; await Store.refreshData(); } else { showToast("Update failed: " + res.message, 'error'); } } finally { Store.setLoading(false); } }
+        function handlePrayerRequest(e) { e.preventDefault(); const form = e.target; const user = Store.user; const payload = { MemberID: user.ID, Type: 'Prayer Request', Content: `Topic: ${form.topic.value}\nDescription: ${form.details.value}`, Confidential: form.confidential.checked }; Store.setLoading(true); API.call('ADD_REQUEST', payload).then(res => { showToast("Prayer Request Sent. We are standing with you in faith!"); Store.toggleModal('prayerRequestModal', false); form.reset(); Store.refreshData(); }).finally(() => Store.setLoading(false)); }
+        function openIDCard(memberId) { const member = Store.data.members.find(m => m.ID === memberId); if(!member) return; const now = new Date(); const year = now.getFullYear(); const joinYear = new Date(member.JoinDate).getFullYear(); const issueDate = joinYear === year ? member.JoinDate : `${year}-01-01`; const expiryDate = `${year}-12-31`; const digitalSig = btoa(`${member.ID}-${year}-${member.Status}`).substring(0, 16).toUpperCase(); const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; }; const setHtml = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; }; setText('idCardName', member.Name); setText('idCardRole', member.Role.toUpperCase()); setText('idCardNumber', member.ID); setText('idCardDept', member.Dept !== 'None' ? member.Dept : 'General Assembly'); setText('idCardIssue', issueDate); setText('idCardExpiry', expiryDate); setText('idCardPhone', member.Phone); setText('idCardEmergency', member.EmergencyContact || 'None Listed'); setText('idCardSig', digitalSig); const imgEl = document.getElementById('idCardImg'); if(imgEl) { if (member.Gender === 'Female') { imgEl.src = "https://cdn-icons-png.flaticon.com/512/4140/4140047.png"; } else { imgEl.src = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"; } } Store.toggleModal('idModal', true); }
+        function initCharts() { const canvas = document.getElementById('financeChart'); if (!canvas) return; const ctx = canvas.getContext('2d'); if (window.myChart) { window.myChart.destroy(); window.myChart = null; } const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const incomeData = new Array(12).fill(0); const expenseData = new Array(12).fill(0); Store.data.finance.forEach(t => { if(!t.Voided) { const monthIndex = new Date(t.Date).getMonth(); if(t.Type === 'Income') incomeData[monthIndex] += t.Amount; else expenseData[monthIndex] += t.Amount; } }); window.myChart = new Chart(ctx, { type: 'line', data: { labels: months, datasets: [ { label: 'Income', data: incomeData, borderColor: '#0a0f24', tension: 0.4 }, { label: 'Expense', data: expenseData, borderColor: '#ef4444', tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false } }); }
+        function handleImportSubmit(e) { e.preventDefault(); const text = document.getElementById('importText').value.trim(); if (!text) return alert("Please paste some data first."); const rows = text.split('\n'); const newTransactions = []; Store.setLoading(true); rows.forEach((row, index) => { if(!row.trim()) return; const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, '')); if(cols.length < 3) return; if (cols[0].toLowerCase() === 'date') return; const date = cols[0]; const category = cols[1]; const amount = parseFloat(cols[2]); const desc = cols[3] || 'Legacy Import'; const memberIdentifier = cols[4] || ''; if(isNaN(amount)) return; let memberId = null; if(memberIdentifier) { const member = Store.data.members.find(m => m.ID === memberIdentifier || m.Name.toLowerCase() === memberIdentifier.toLowerCase() ); if(member) memberId = member.ID; } newTransactions.push({ ID: 'IMP' + Date.now() + index, Date: date, Type: 'Income', Category: category, Amount: amount, Description: desc, MemberID: memberId, Method: 'Cash', Reference: 'MIGRATION', Voided: false }); }); setTimeout(() => { if(newTransactions.length === 0) { Store.setLoading(false); return alert("No valid transactions found. Check format."); } const DB = StorageEngine.loadAll(); DB.finance = [...newTransactions, ...DB.finance]; DB.finance.sort((a,b) => new Date(b.Date) - new Date(a.Date)); StorageEngine.set(StorageEngine.getKeys().FINANCE, DB.finance); Store.setLoading(false); showToast(`Successfully imported ${newTransactions.length} records.`); Store.toggleModal('importModal', false); Store.refreshData(); }, 1000); }
+        function renderMembersRows() { const searchTerm = Store.filters.memberSearch.toLowerCase(); const statusFilter = Store.filters.memberStatus; const filteredMembers = Store.data.members.filter(m => { const matchesSearch = m.Name.toLowerCase().includes(searchTerm) || m.Phone.includes(searchTerm) || m.ID.toLowerCase().includes(searchTerm); const matchesStatus = statusFilter === 'All' ? true : m.WelfareStatus === statusFilter; return matchesSearch && matchesStatus; }); if (filteredMembers.length === 0) { return `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400 italic bg-slate-50/50">No members found matching your criteria.</td></tr>`; } return filteredMembers.map(m => {
+            const displayDate = (m.JoinDate && m.JoinDate.match(/^\d{4}-\d{2}-\d{2}$/)) ? m.JoinDate : ''; 
+            return `<tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"><td class="px-6 py-4 text-xs font-mono text-slate-400 whitespace-nowrap">${m.ID || '-'}</td><td class="px-6 py-4"><div class="font-medium text-slate-800 whitespace-nowrap">${m.Name || 'Unknown'}</div><div class="text-[10px] text-slate-400">Joined: ${displayDate || 'N/A'}</div></td><td class="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">${m.Role || 'Member'}</td><td class="px-6 py-4 text-xs font-bold text-pgmi-navy whitespace-nowrap">${m.Branch || 'Headquarters'}</td><td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs rounded-full font-bold ${m.WelfareStatus === 'Good Standing' ? 'bg-green-100 text-green-700' : (m.WelfareStatus === 'Defaulter' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500')}">${m.WelfareStatus || 'Unknown'}</span></td><td class="px-6 py-4 text-right whitespace-nowrap"><div class="flex justify-end gap-2"><button onclick="openEditMember('${m.ID}')" class="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition" title="Edit Member"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openMemberDetail('${m.ID}')" class="text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition" title="View Full Details"><i data-lucide="eye" class="w-4 h-4"></i></button><button onclick="openIDCard('${m.ID}')" class="text-pgmi-navy hover:bg-blue-50 p-2 rounded-lg transition" title="Digital ID"><i data-lucide="id-card" class="w-4 h-4"></i></button></div></td></tr>`;
+        }).join(''); }
+
+        function Render() {
+            const app = document.getElementById('app');
+            if (Store.view === 'login' && Store.user) {
+                if (Store.user.Role === 'Member') Store.view = 'member_portal';
+                else Store.view = 'dashboard';
+                // Don't wait for data to render the skeleton
+                setTimeout(() => Store.refreshData(), 100);
+            }
+            
+            if (Store.view === 'login') { 
+                app.innerHTML = LoginView(); 
+            } else if (Store.view === 'register') { 
+                app.innerHTML = RegisterView(); 
+            } else {
+                let content = '';
+                switch (Store.view) {
+                    case 'dashboard': content = DashboardView(); break;
+                    case 'members': content = MembersView(); break;
+                    case 'finance': content = FinanceView(); break;
+                    case 'growth': content = GrowthView(); break;
+                    case 'structure': content = BranchesView(); break;
+                    case 'member_portal': content = MemberPortalView(); break;
+                    case 'member_giving': content = MemberGivingView(); break;
+                    case 'member_profile': content = MemberProfileView(); break;
+                    default: content = `<div class="p-8">View not found</div>`;
+                }
+                const sidebarCollapsed = Store.sidebarCollapsed;
+                app.innerHTML = `<div class="flex">${Sidebar()}<main class="flex-1 min-h-screen content-transition ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} pb-24 md:pb-0">${content}</main>${MobileNav()}</div><div id="detailsModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target===this) Store.toggleModal('detailsModal', false)"><div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-enter relative"><button onclick="Store.toggleModal('detailsModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-6 h-6"></i></button><div id="modalContent"></div></div></div><div id="idModal" class="fixed inset-0 bg-black/90 z-[150] hidden flex items-center justify-center p-4" onclick="if(event.target===this) Store.toggleModal('idModal', false)"><div class="bg-white w-full max-w-[350px] rounded-2xl overflow-hidden shadow-2xl relative animate-enter transform transition-all"><button onclick="Store.toggleModal('idModal', false)" class="absolute top-4 right-4 text-white hover:text-red-200 z-10 bg-black/20 rounded-full p-1"><i data-lucide="x" class="w-5 h-5"></i></button><div class="h-32 bg-pgmi-navy relative"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div><div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-24 h-24 bg-white rounded-full border-4 border-white shadow-lg overflow-hidden"><img id="idCardImg" src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png" class="w-full h-full object-cover"></div></div><div class="pt-14 pb-8 px-6 text-center"><h2 id="idCardName" class="text-xl font-bold text-pgmi-navy mb-1 leading-tight">Member Name</h2><p id="idCardRole" class="text-xs font-bold text-pgmi-gold uppercase tracking-widest mb-4">MEMBER</p><div class="grid grid-cols-2 gap-y-3 text-left text-xs mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100"><div class="text-slate-400 uppercase text-[10px]">ID Number</div><div id="idCardNumber" class="font-mono font-bold text-slate-700 text-right">MEM000</div><div class="text-slate-400 uppercase text-[10px]">Assembly</div><div id="idCardDept" class="font-bold text-slate-700 text-right truncate">Headquarters</div><div class="text-slate-400 uppercase text-[10px]">Issued</div><div id="idCardIssue" class="font-bold text-slate-700 text-right">2024-01-01</div></div><div class="flex justify-center"><div class="w-full bg-slate-100 h-10 rounded flex items-center justify-center"><p id="idCardSig" class="font-serif italic text-slate-400 text-sm tracking-widest opacity-60">SIGNATURE</p></div></div></div><div class="bg-pgmi-navy p-3 text-center"><p class="text-[8px] text-white/60 uppercase tracking-widest">Property of Precious God Ministry Int.</p></div></div></div>${renderCommonModals()}`;
+            }
+            safeCreateIcons();
+            setTimeout(toggleTransactionFields, 500); 
+        }
+
+        function renderCommonModals() {
+            return `
+            <!-- IMPORT MODAL -->
+            <div id="importModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
+                <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg relative">
+                    <button onclick="Store.toggleModal('importModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    <div class="mb-4">
+                        <h3 class="font-bold text-lg text-pgmi-navy flex items-center gap-2"><i data-lucide="upload-cloud" class="w-5 h-5"></i> Import Data</h3>
+                        <p class="text-xs text-slate-500 mt-1">Bulk upload legacy transactions.</p>
+                    </div>
+                    <form onsubmit="handleImportSubmit(event)">
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 mb-3">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Required Format (CSV)</p>
+                            <code class="text-[10px] block text-slate-600">Date, Category, Amount, Description, Member (Optional)</code>
+                            <p class="text-[10px] text-slate-400 mt-1 italic">Example: 2024-01-01, Tithe, 200.00, January Tithe, John Doe</p>
+                        </div>
+                        <textarea id="importText" required placeholder="Paste your CSV data here..." class="w-full h-48 p-3 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none mb-4 resize-none"></textarea>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="Store.toggleModal('importModal', false)" class="text-slate-500 px-3 py-2 text-sm font-bold">Cancel</button>
+                            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold shadow-md text-sm flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Process Import</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="addBranchModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm"><h3 class="font-bold text-lg text-pgmi-navy mb-4">Enlist New Branch</h3><form onsubmit="handleAddBranch(event)" class="space-y-3"><input type="hidden" name="id"><div><label class="text-xs font-bold text-slate-500 uppercase">Branch Name</label><input name="name" placeholder="e.g. London Branch" required class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Location / City</label><input name="location" placeholder="e.g. London" required class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Head Pastor</label><input name="pastor" placeholder="Optional" class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Founded Date</label><input name="date" type="date" required class="w-full p-2 border rounded mt-1"></div><div class="flex justify-end gap-2 mt-4"><button type="button" onclick="Store.toggleModal('addBranchModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded font-bold shadow-lg">Enlist Branch</button></div></form></div></div><div id="addDepartmentModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm"><h3 class="font-bold text-lg text-pgmi-navy mb-4">Add Department</h3><form onsubmit="handleAddDepartment(event)" class="space-y-3"><div><label class="text-xs font-bold text-slate-500 uppercase">Department Name</label><input name="name" placeholder="e.g. Security, Media..." required class="w-full p-2 border rounded mt-1"></div><div class="flex justify-end gap-2 mt-4"><button type="button" onclick="Store.toggleModal('addDepartmentModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded font-bold shadow-lg">Save Dept</button></div></form></div></div><div id="addMemberModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto"><h3 class="font-bold text-xl text-pgmi-navy mb-6 border-b pb-4 flex items-center gap-2"><i data-lucide="user-plus" class="w-6 h-6"></i> New Member Registration</h3><form onsubmit="handleAddMember(event)" class="space-y-6"><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative overflow-hidden group hover:border-blue-200 transition"><div class="absolute top-0 right-0 w-24 h-24 bg-blue-100 rounded-full -mr-8 -mt-8 opacity-20"></div><h4 class="text-xs font-bold text-pgmi-navy uppercase mb-4 flex items-center gap-2 relative z-10"><div class="w-6 h-6 rounded-full bg-pgmi-navy text-white flex items-center justify-center text-[10px]">1</div> Personal Identity</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10"><input name="name" placeholder="Full Name (Official)" required class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-pgmi-navy outline-none"><select name="gender" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-pgmi-navy outline-none"><option value="Male">Male</option><option value="Female">Female</option></select><div class="md:col-span-2 grid grid-cols-2 gap-4"><input name="dob" type="date" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-500"><select name="maritalStatus" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-500"><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option></select></div></div></div><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative overflow-hidden group hover:border-purple-200 transition"><div class="absolute top-0 right-0 w-24 h-24 bg-purple-100 rounded-full -mr-8 -mt-8 opacity-20"></div><h4 class="text-xs font-bold text-purple-900 uppercase mb-4 flex items-center gap-2 relative z-10"><div class="w-6 h-6 rounded-full bg-purple-900 text-white flex items-center justify-center text-[10px]">2</div> Contact & Location</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10"><input name="phone" pattern="[0-9]*" inputmode="numeric" placeholder="Phone Number" required class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-900 outline-none"><input name="email" type="email" placeholder="Email Address (Optional)" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-900 outline-none"><input name="address" placeholder="Residential Address / GPS" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm md:col-span-2"><input name="emergencyContact" placeholder="Emergency Contact (Name & Phone)" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm md:col-span-2"><input name="occupation" placeholder="Occupation / Job" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm"><select name="education" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-500"><option value="None">Education Level...</option><option value="Primary">Primary</option><option value="JHS">JHS</option><option value="SHS">SHS</option><option value="Tertiary">Tertiary</option><option value="Post-Graduate">Post-Graduate</option></select></div></div><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative overflow-hidden group hover:border-yellow-200 transition"><div class="absolute top-0 right-0 w-24 h-24 bg-yellow-100 rounded-full -mr-8 -mt-8 opacity-20"></div><h4 class="text-xs font-bold text-yellow-700 uppercase mb-4 flex items-center gap-2 relative z-10"><div class="w-6 h-6 rounded-full bg-yellow-600 text-white flex items-center justify-center text-[10px]">3</div> Church & Spiritual</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10"><select name="branch" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-pgmi-navy font-bold shadow-sm" required><option value="" disabled selected>Select Branch...</option>${Store.data.branches.map(b => `<option value="${b.Name}">${b.Name}</option>`).join('')}</select><select name="role" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-600"><option value="Member">Role: Member</option><option value="Master Admin">Role: Master Admin</option><option value="Finance Admin">Role: Finance Admin</option><option value="Tithe Officer">Role: Tithe Officer</option><option value="Welfare Officer">Role: Welfare Officer</option><option value="Offering Officer">Role: Offering Officer</option></select><select name="dept" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-600"><option value="None">No Dept / General</option>${Store.data.departments.map(d => `<option value="${d}">${d}</option>`).join('')}</select><div class="relative"><label class="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Join Date</label><input name="joinDate" type="date" required class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-500" value=""></div><select name="baptismStatus" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-600"><option value="None">Not Baptized</option><option value="Water Only">Water Baptism</option><option value="Holy Ghost Only">Holy Ghost Baptism</option><option value="Both">Both</option></select><select name="welfareStatus" class="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-pgmi-navy font-bold"><option value="Not Enrolled">Welfare: Not Enrolled</option><option value="Good Standing">Welfare: Good Standing</option><option value="Defaulter">Welfare: Defaulter</option></select><div class="md:col-span-2 pt-2 border-t border-slate-200 mt-2"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Soul Winning & Family Link</p><div class="grid grid-cols-2 gap-4"><input name="invitedBy" placeholder="Invited By (Member ID)" class="w-full p-2 border rounded text-xs bg-white"><input name="spouseID" placeholder="Spouse Member ID (Optional)" class="w-full p-2 border rounded text-xs bg-white"></div><div class="mt-2 flex items-center gap-2"><input type="checkbox" name="isFamilyHead" class="w-4 h-4 text-pgmi-navy rounded focus:ring-pgmi-navy"><label class="text-xs font-medium text-slate-600">Mark as Head of Family Unit</label></div></div></div></div><div class="flex justify-end gap-3 pt-4 border-t border-slate-100"><button type="button" onclick="Store.toggleModal('addMemberModal', false)" class="text-slate-500 font-bold px-4 py-3 hover:bg-slate-50 rounded-lg transition">Cancel</button><button type="submit" class="bg-pgmi-navy hover:bg-[#050813] text-white px-6 py-3 rounded-lg font-bold shadow-lg transform active:scale-95 transition flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Complete Registration</button></div></form></div></div><div id="editMemberModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto"><h3 class="font-bold text-lg text-pgmi-navy mb-4 border-b pb-2">Edit Member Details</h3><form onsubmit="handleEditMember(event)" class="space-y-4"><input type="hidden" name="id"><div class="bg-red-50 p-3 rounded border border-red-100 mb-4"><p class="text-xs font-bold text-red-700 uppercase mb-2 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Security & Access</p><input name="newPassword" type="text" placeholder="Reset Password (Leave empty to keep current)" class="w-full p-2 border border-red-200 rounded text-sm bg-white text-red-600 placeholder-red-300"></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input name="name" placeholder="Full Name" required class="w-full p-2 border rounded"><select name="gender" class="w-full p-2 border rounded"><option value="Male">Male</option><option value="Female">Female</option></select><input name="phone" pattern="[0-9]*" inputmode="numeric" placeholder="Phone" required class="w-full p-2 border rounded"><input name="email" placeholder="Email" class="w-full p-2 border rounded"><div><label class="text-[10px] text-slate-500">Date of Birth</label><input name="dob" type="date" class="w-full p-2 border rounded"></div><select name="maritalStatus" class="w-full p-2 border rounded mt-auto"><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option></select></div><div class="grid grid-cols-1 gap-3"><input name="address" placeholder="Residential Address" class="w-full p-2 border rounded"><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input name="occupation" placeholder="Occupation" class="w-full p-2 border rounded"><select name="education" class="w-full p-2 border rounded"><option value="None">Education Level...</option><option value="Primary">Primary</option><option value="JHS">JHS</option><option value="SHS">SHS</option><option value="Tertiary">Tertiary</option><option value="Post-Graduate">Post-Graduate</option></select></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="flex items-center gap-2 p-2 border rounded bg-slate-50"><input type="checkbox" name="isFamilyHead" class="w-4 h-4"><label class="text-sm font-medium">Is Family Head?</label></div><input name="spouseID" placeholder="Spouse Member ID" class="w-full p-2 border rounded"></div><input name="emergencyContact" placeholder="Emergency Contact" class="w-full p-2 border rounded"></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-4"><select name="role" class="w-full p-2 border rounded bg-blue-50 border-blue-200"><option value="Member">Member</option><option value="Master Admin">Master Admin</option><option value="Finance Admin">Finance Admin</option><option value="Tithe Officer">Tithe Officer</option><option value="Welfare Officer">Welfare Officer</option><option value="Offering Officer">Offering Officer</option></select><select name="dept" class="w-full p-2 border rounded"><option value="None">No Dept</option>${Store.data.departments.map(d => `<option value="${d}">${d}</option>`).join('')}</select><div><label class="text-[10px] text-slate-500">Join Date</label><input name="joinDate" type="date" class="w-full p-2 border rounded"></div><select name="baptismStatus" class="w-full p-2 border rounded mt-auto"><option value="None">Not Baptized</option><option value="Water Only">Water Baptism</option><option value="Holy Ghost Only">Holy Ghost Baptism</option><option value="Both">Both</option></select></div><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2"><select name="status" class="w-full p-2 border rounded"><option value="Active">Active</option><option value="Inactive">Inactive</option></select><select name="welfare" class="w-full p-2 border rounded"><option value="Not Enrolled">Not Enrolled</option><option value="Good Standing">Good Standing</option><option value="Defaulter">Defaulter</option></select></div><div class="bg-slate-50 p-3 rounded border border-slate-200"><p class="text-xs font-bold text-slate-500 mb-2">Link New Relative</p><div class="flex gap-2"><input name="newRelativeId" placeholder="Relative's Member ID" class="w-full p-2 border rounded text-xs"><select name="newRelativeType" class="w-full p-2 border rounded text-xs"><option value="">Relation...</option><option value="Parent">Parent</option><option value="Child">Child</option><option value="Sibling">Sibling</option></select></div><p class="text-[10px] text-slate-400 mt-1 italic">Note: Use 'Spouse ID' above for marriage links.</p></div><div class="flex justify-between gap-2 mt-4"><button type="button" onclick="confirmDeleteMember()" class="text-red-500 hover:bg-red-50 px-3 py-2 text-sm font-bold border border-transparent hover:border-red-100 rounded">Delete Member</button><div class="flex gap-2"><button type="button" onclick="Store.toggleModal('editMemberModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded">Update Member</button></div></div></form></div></div><div id="benefitModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto border-t-4 border-pgmi-navy"><h3 class="font-bold text-lg text-pgmi-navy mb-1">Process Benefit</h3><p class="text-xs text-slate-500 mb-4">Checks Article 20 & 22 Compliance</p><form onsubmit="submitBenefit(event)" class="space-y-3"><select id="benefitMember" class="w-full p-2 border rounded" onchange="checkBenefitEligibility()"><option value="">Select Member...</option>${Store.data.members.map(m => `<option value="${m.ID}">${m.Name}</option>`).join('')}</select><select id="benefitEvent" class="w-full p-2 border rounded" onchange="checkBenefitEligibility()">${Object.keys(Constitution.benefits).map(k => `<option value="${k}">${k}</option>`).join('')}</select><div id="benefitStatus" class="p-2 bg-slate-50 rounded min-h-[40px] flex items-center justify-center border border-dashed border-slate-300"><span class="text-xs text-slate-400">Select member to check status</span></div><div class="relative"><span class="absolute left-3 top-2 text-slate-400 font-bold">₵</span><input id="benefitAmount" type="number" readonly class="w-full pl-12 p-2 border rounded bg-slate-100 font-bold text-slate-700"></div><div class="flex justify-end gap-2 mt-4"><button type="button" onclick="Store.toggleModal('benefitModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button id="benefitSubmit" type="submit" disabled class="bg-pgmi-navy disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded">Payout</button></div></form></div></div><div id="defaultersModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6 border-b pb-4"><div><h3 class="font-bold text-xl text-pgmi-navy">Defaulters Analysis</h3><p class="text-xs text-slate-500">Real-time dues reconciliation based on join date.</p></div><button onclick="Store.toggleModal('defaultersModal', false)" class="text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-6 h-6"></i></button></div><div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold"><tr><th class="p-3 whitespace-nowrap">ID</th><th class="p-3 whitespace-nowrap">Name</th><th class="p-3 text-right whitespace-nowrap">Expected</th><th class="p-3 text-right whitespace-nowrap">Paid</th><th class="p-3 text-right whitespace-nowrap">Arrears</th><th class="p-3 text-right whitespace-nowrap">Penalty</th><th class="p-3 text-right bg-red-50 text-red-900 border-l border-red-100 whitespace-nowrap">Total Due</th><th class="p-3 text-center whitespace-nowrap">Status</th></tr></thead><tbody id="defaultersTableBody" class="divide-y divide-slate-100"></tbody></table></div><div class="mt-6 bg-blue-50 p-4 rounded-lg flex items-start gap-3"><i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5"></i><div class="text-xs text-blue-800"><p class="font-bold mb-1">Calculation Logic:</p><p>Expected Dues = Months since Join Date × Monthly Dues (₵${Constitution.duesAmount.toFixed(2)}).</p><p>Penalty = ${Constitution.penaltyRate * 100}% of Arrears applied if member owes more than ${Constitution.penaltyThresholdMonths} months.</p><p class="font-bold mt-1">Total Due = Arrears + Penalty</p></div></div></div></div><div id="memberDetailModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) Store.toggleModal('memberDetailModal', false)"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-[600px] relative max-h-[90vh] overflow-y-auto"><button onclick="Store.toggleModal('memberDetailModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 z-10"><i data-lucide="x" class="w-5 h-5"></i></button><div id="memberDetailContent"></div></div></div><div id="receiptModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) closeReceipt()"><div class="bg-white w-full max-w-sm rounded-xl shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"><button onclick="closeReceipt()" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 z-10 p-2"><i data-lucide="x" class="w-5 h-5"></i></button><div id="receiptContent"></div></div></div><div id="addTransactionModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto"><h3 class="font-bold text-lg text-pgmi-navy mb-4">New Transaction</h3><form onsubmit="handleAddTransaction(event)" class="space-y-3"><input name="date" type="date" required class="w-full p-2 border rounded" value="${getTodayDate()}"><div class="grid grid-cols-2 gap-2"><select name="type" class="w-full p-2 border rounded"><option value="Income">Income (+)</option><option value="Expense">Expense (-)</option></select><select name="method" class="w-full p-2 border rounded"><option value="Cash">Cash</option><option value="Momo">Momo</option><option value="Bank">Bank</option></select></div><select name="category" class="w-full p-2 border rounded font-medium text-pgmi-navy" onchange="toggleTransactionFields()">${(PERMISSIONS[Store.user?.Role]?.allowedCategories || ['Offering', 'Tithe', 'Welfare', 'Utilities', 'Donation']).map(c => `<option value="${c}">${c}</option>`).join('')}</select><div id="trxMemberField"><label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Member Link (Optional for General)</label><select name="memberId" class="w-full p-2 border rounded bg-slate-50"><option value="">Select Member...</option>${Store.data.members.map(m => `<option value="${m.ID}">${m.Name} (${m.ID})</option>`).join('')}</select></div><div id="trxDescField"><input name="description" placeholder="Description / Payee Name" class="w-full p-2 border rounded"></div><input name="amount" type="number" step="0.01" placeholder="Amount" required class="w-full p-2 border rounded font-bold text-lg"><input name="reference" placeholder="Reference ID (e.g. Momo Transaction ID)" class="w-full p-2 border rounded text-sm bg-slate-50"><div class="flex justify-end gap-2 mt-4"><button type="button" onclick="Store.toggleModal('addTransactionModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded">Save Record</button></div></form></div></div><div id="memberEditSelfModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md relative max-h-[90vh] overflow-y-auto"><button onclick="Store.toggleModal('memberEditSelfModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button><h3 class="font-bold text-lg text-pgmi-navy mb-1">Update My Profile</h3><p class="text-xs text-slate-500 mb-4">Keep your contact information up to date.</p><form onsubmit="handleSelfUpdate(event)" class="space-y-4"><div class="p-3 bg-blue-50 text-blue-800 text-xs rounded border border-blue-100 mb-2">Note: Name and Role changes require admin approval.</div><div class="grid grid-cols-2 gap-3"><div><label class="text-[10px] font-bold uppercase text-slate-500">Phone</label><input name="phone" pattern="[0-9]*" inputmode="numeric" value="${Store.user?.Phone}" class="w-full p-2 border rounded text-sm"></div><div><label class="text-[10px] font-bold uppercase text-slate-500">Email</label><input name="email" value="${Store.user?.Email || ''}" class="w-full p-2 border rounded text-sm"></div></div><div><label class="text-[10px] font-bold uppercase text-slate-500">Address / GPS</label><input name="address" value="${Store.user?.Address || ''}" class="w-full p-2 border rounded text-sm"></div><div><label class="text-[10px] font-bold uppercase text-slate-500">Occupation</label><input name="occupation" value="${Store.user?.Occupation || ''}" class="w-full p-2 border rounded text-sm"></div><div><label class="text-[10px] font-bold uppercase text-slate-500">Emergency Contact</label><input name="emergencyContact" value="${Store.user?.EmergencyContact || ''}" class="w-full p-2 border rounded text-sm"></div><div class="flex justify-end gap-2 mt-4 pt-4 border-t"><button type="button" onclick="Store.toggleModal('memberEditSelfModal', false)" class="text-slate-500 px-3 py-2 text-sm">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded font-bold shadow-lg text-sm">Save Changes</button></div></form></div></div><div id="constitutionModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg relative max-h-[85vh] overflow-y-auto"><button onclick="Store.toggleModal('constitutionModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button><div class="text-center mb-6"><i data-lucide="book" class="w-12 h-12 text-pgmi-gold mx-auto mb-2"></i><h3 class="font-serif text-2xl font-bold text-pgmi-navy">Member Benefits</h3><p class="text-sm text-slate-500">Excerpts from the Constitution</p></div><div class="space-y-6"><div><h4 class="font-bold text-sm text-slate-800 border-b pb-1 mb-2">Welfare Obligations</h4><ul class="list-disc list-inside text-sm text-slate-600 space-y-1"><li>Monthly Dues: <b>₵${Constitution.duesAmount.toFixed(2)}</b></li><li>Minimum Membership Period: <b>${Constitution.minMembershipMonths} Months</b></li><li>Benefits are forfeited if dues are in arrears for > ${Constitution.penaltyThresholdMonths} months.</li></ul></div><div><h4 class="font-bold text-sm text-slate-800 border-b pb-1 mb-2">Financial Benefits</h4><div class="grid grid-cols-1 gap-2">${Object.entries(Constitution.benefits).map(([key, val]) => `<div class="flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-100"><span class="text-sm font-medium text-slate-700">${key}</span><span class="font-bold text-pgmi-navy">₵${val.toFixed(2)}</span></div>`).join('')}</div></div></div></div></div><div id="forgotPasswordModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm relative overflow-hidden"><button onclick="Store.toggleModal('forgotPasswordModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button><div class="text-center mb-6"><div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 text-pgmi-navy"><i data-lucide="key-round" class="w-6 h-6"></i></div><h3 class="font-bold text-lg text-pgmi-navy">Recovery Request</h3><p class="text-xs text-slate-500 mt-1">Submit your details to notify the Admin.</p></div><form onsubmit="handleForgotPassword(event)" class="space-y-4"><div><label class="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Full Name</label><input name="name" required placeholder="Enter your name" class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div><label class="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Phone Number</label><input name="phone" required placeholder="e.g. 055..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pgmi-navy"></div><div class="pt-2"><button type="submit" class="w-full bg-pgmi-navy hover:bg-blue-900 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition"><span>Send Request</span><i data-lucide="send" class="w-4 h-4"></i></button><p class="text-[10px] text-center text-slate-400 mt-3">For immediate access, please call the IT Dept.</p></div></form></div></div><div id="prayerRequestModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md relative overflow-hidden"><button onclick="Store.toggleModal('prayerRequestModal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button><h3 class="font-bold text-lg text-pgmi-navy mb-4 border-b pb-2 flex items-center gap-2"><i data-lucide="message-circle" class="w-5 h-5"></i> Prayer Request</h3><form onsubmit="handlePrayerRequest(event)" class="space-y-4"><div><label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Prayer Topic</label><input name="topic" required placeholder="e.g. Healing, Provision..." class="w-full p-3 border border-slate-200 rounded-lg text-sm"></div><div><label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Details</label><textarea name="details" required placeholder="Share more details..." class="w-full p-3 border border-slate-200 rounded-lg text-sm h-32"></textarea></div><div class="flex items-center gap-2"><input type="checkbox" name="confidential" id="confidentialCheck" class="w-4 h-4 text-pgmi-navy rounded"><label for="confidentialCheck" class="text-sm text-slate-600">Keep Confidential (Pastors Only)</label></div><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="Store.toggleModal('prayerRequestModal', false)" class="text-slate-500 px-3 py-2 text-sm">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-6 py-2 rounded-lg font-bold shadow-lg">Send Request</button></div></form></div></div><div id="addSoulModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto"><h3 class="font-bold text-lg text-pgmi-navy mb-4 flex items-center gap-2"><i data-lucide="user-plus" class="w-5 h-5 text-green-600"></i> New Soul Won</h3><form onsubmit="handleAddSoul(event)" class="space-y-3"><div><label class="text-xs font-bold text-slate-500 uppercase">Soul Name</label><input name="soulName" placeholder="Name" required class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Phone</label><input name="soulPhone" placeholder="Phone" required class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Won By / Assigned To</label><input name="assignedTo" placeholder="Soul Winner Name" required class="w-full p-2 border rounded mt-1"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Initial Notes</label><textarea name="notes" placeholder="e.g. Met at bus stop..." class="w-full p-2 border rounded mt-1 h-20"></textarea></div><div class="flex justify-end gap-2 mt-4"><button type="button" onclick="Store.toggleModal('addSoulModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded font-bold shadow-lg">Save Soul</button></div></form></div></div><div id="moveSoulModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm"><h3 class="font-bold text-lg text-pgmi-navy mb-4">Update Soul Progress</h3><form id="moveSoulForm" onsubmit="handleMoveSoul(event)" class="space-y-4"><input type="hidden" name="soulId"><div><label class="text-xs font-bold text-slate-500 uppercase">New Stage</label><select name="currentStage" class="w-full p-3 border rounded-lg font-bold text-pgmi-navy"><option value="WIN">1. WIN (New Believer)</option><option value="RETAIN">2. RETAIN (Follow Up)</option><option value="DISCIPLE">3. DISCIPLE (Training)</option><option value="SEND">4. SEND (Graduation)</option></select></div><div id="foundationStepContainer" class="hidden"><label class="text-xs font-bold text-slate-500 uppercase">Foundation Class Progress</label><select name="foundationStep" class="w-full p-3 border rounded-lg"><option value="0">Not Started</option><option value="1">Class 1: Salvation</option><option value="2">Class 2: Holy Spirit</option><option value="3">Class 3: Doctrines</option><option value="4">Class 4: Service</option></select></div><div class="flex justify-end gap-2 mt-2"><button type="button" onclick="Store.toggleModal('moveSoulModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-green-600 text-white px-4 py-2 rounded font-bold shadow-lg">Update Status</button></div></form></div></div><div id="editTransactionModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-pgmi-navy">Manage Transaction</h3><button type="button" id="btn-delete-trx" class="text-red-500 hover:bg-red-50 p-2 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><form onsubmit="handleEditTransaction(event)" class="space-y-3"><input type="hidden" name="id"><input name="date" type="date" required class="w-full p-2 border rounded"><div class="grid grid-cols-2 gap-2"><select name="type" class="w-full p-2 border rounded"><option value="Income">Income (+)</option><option value="Expense">Expense (-)</option></select><select name="method" class="w-full p-2 border rounded"><option value="Cash">Cash</option><option value="Momo">Momo</option><option value="Bank">Bank</option></select></div><select name="category" class="w-full p-2 border rounded font-medium text-pgmi-navy">${(PERMISSIONS[Store.user?.Role]?.allowedCategories || ['Offering', 'Tithe', 'Welfare', 'Utilities', 'Donation']).map(c => `<option value="${c}">${c}</option>`).join('')}</select><input name="description" placeholder="Description / Payee" required class="w-full p-2 border rounded"><input name="amount" type="number" step="0.01" placeholder="Amount" required class="w-full p-2 border rounded font-bold text-lg"><input name="reference" placeholder="Reference ID" class="w-full p-2 border rounded text-sm bg-slate-50"><div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100"><button type="button" id="btn-void-trx" class="text-red-600 hover:bg-red-50 px-3 py-2 rounded font-bold text-xs border border-transparent hover:border-red-200">Void</button><div class="flex gap-2"><button type="button" onclick="Store.toggleModal('editTransactionModal', false)" class="text-slate-500 px-3 py-2">Cancel</button><button type="submit" class="bg-pgmi-navy text-white px-4 py-2 rounded font-bold shadow-sm">Save</button></div></div></form></div></div>`;
+        }
+
+        function closeReceipt() {
+             Store.toggleModal('receiptModal', false);
+        }
+
+        function initApp() {
+            // RENDER IMMEDIATELY
+            Render();
+            
+            // Then handle async tasks
+            Store.loadConfig().then(() => {
+                // Re-render if config changes things
+                console.log("Config loaded");
+                Render();
+            });
+
+            // Handle icons in background
+            const checkIcons = () => {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                } else {
+                    setTimeout(checkIcons, 300);
+                }
+            };
+            checkIcons();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>

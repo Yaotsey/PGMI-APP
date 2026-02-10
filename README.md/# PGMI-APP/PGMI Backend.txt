@@ -1,0 +1,315 @@
+/**
+ * PGMI PORTAL BACKEND v5.0
+ * --------------------------------
+ * This script handles all database operations for the PGMI Portal.
+ * It serves as the bridge between your frontend and the Google Sheets database.
+ */
+
+// --- CONFIGURATION ---
+const SCRIPT_PROP = PropertiesService.getScriptProperties();
+const SHEETS = {
+  MEMBERS: 'Members',
+  FINANCE: 'Finance',
+  GROWTH: 'Growth',
+  REQUESTS: 'Requests',
+  BRANCHES: 'Branches',
+  DEPARTMENTS: 'Departments'
+};
+
+// --- ENTRY POINTS ---
+
+function doGet(e) {
+  // Simple check to see if the service is running
+  return ContentService.createTextOutput("PGMI Backend Online. Use POST for API calls.");
+}
+
+function doPost(e) {
+  // 1. Lock Service: Prevents simultaneous edits from corrupting data
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000); // Wait up to 10 seconds for other processes
+
+  try {
+    // 2. Parse Data
+    const params = e.parameter;
+    const postData = e.postData ? JSON.parse(e.postData.contents) : {};
+    const action = postData.action || params.action;
+    
+    // 3. Route Action
+    let result = {};
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    switch (action) {
+      case 'AUTH_LOGIN':
+        result = handleLogin(ss, postData);
+        break;
+      case 'AUTH_REGISTER':
+        result = handleRegister(ss, postData);
+        break;
+      case 'GET_DASHBOARD_DATA':
+        result = getDashboardData(ss);
+        break;
+      case 'GET_CONFIG':
+        result = getConfig(ss);
+        break;
+        
+      // --- CORE ADD/UPDATE ---
+      case 'ADD_MEMBER':
+        result = addRow(ss, SHEETS.MEMBERS, postData);
+        break;
+      case 'UPDATE_MEMBER':
+        result = updateRow(ss, SHEETS.MEMBERS, 'ID', postData.ID, postData);
+        break;
+      case 'ADD_TRANSACTION':
+        result = addRow(ss, SHEETS.FINANCE, postData);
+        break;
+      case 'UPDATE_TRANSACTION':
+        result = updateRow(ss, SHEETS.FINANCE, 'ID', postData.ID, postData);
+        break;
+      case 'ADD_SOUL':
+        result = addRow(ss, SHEETS.GROWTH, postData);
+        break;
+      case 'MOVE_SOUL':
+        result = updateRow(ss, SHEETS.GROWTH, 'ID', postData.ID, postData);
+        break;
+      case 'ADD_REQUEST':
+        result = addRow(ss, SHEETS.REQUESTS, postData);
+        break;
+      case 'UPDATE_REQUEST':
+        result = updateRow(ss, SHEETS.REQUESTS, 'ID', postData.ID, postData);
+        break;
+      case 'ADD_BRANCH':
+        result = addRow(ss, SHEETS.BRANCHES, postData);
+        break;
+      case 'UPDATE_BRANCH':
+        result = updateRow(ss, SHEETS.BRANCHES, 'ID', postData.ID, postData);
+        break;
+      case 'ADD_DEPARTMENT':
+        result = addDepartment(ss, postData);
+        break;
+
+      // --- CRITICAL DELETE ACTIONS ---
+      case 'DELETE_MEMBER':
+        result = deleteRow(ss, SHEETS.MEMBERS, 'ID', postData.ID);
+        break;
+      case 'DELETE_TRANSACTION':
+        result = deleteRow(ss, SHEETS.FINANCE, 'ID', postData.ID);
+        break;
+      case 'DELETE_BRANCH':
+        result = deleteRow(ss, SHEETS.BRANCHES, 'ID', postData.ID);
+        break;
+      case 'DELETE_DEPARTMENT':
+        result = deleteRow(ss, SHEETS.DEPARTMENTS, 'Name', postData.Name);
+        break;
+        
+      default:
+        result = { success: false, message: "Unknown action: " + action };
+    }
+
+    return responseJSON(result);
+
+  } catch (e) {
+    return responseJSON({ success: false, message: "Server Error: " + e.toString() });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- CORE FUNCTIONS ---
+
+function getDashboardData(ss) {
+  // Ensure sheets exist first
+  setupSheets(ss);
+  
+  return {
+    success: true,
+    data: {
+      members: getSheetData(ss, SHEETS.MEMBERS),
+      finance: getSheetData(ss, SHEETS.FINANCE),
+      growth: getSheetData(ss, SHEETS.GROWTH),
+      requests: getSheetData(ss, SHEETS.REQUESTS),
+      notices: [], // Placeholder if you add notices sheet later
+      branches: getSheetData(ss, SHEETS.BRANCHES),
+      departments: getSheetData(ss, SHEETS.DEPARTMENTS).map(d => d.Name) // Flatten departments to array
+    }
+  };
+}
+
+function getConfig(ss) {
+  setupSheets(ss);
+  return {
+    success: true,
+    branches: getSheetData(ss, SHEETS.BRANCHES),
+    departments: getSheetData(ss, SHEETS.DEPARTMENTS).map(d => d.Name)
+  };
+}
+
+// --- AUTH HANDLERS ---
+
+function handleLogin(ss, data) {
+  const members = getSheetData(ss, SHEETS.MEMBERS);
+  const p = String(data.phone).trim();
+  
+  // Smart Match: Check exact, with 0, or without 0
+  const user = members.find(m => {
+    const dbP = String(m.Phone).trim();
+    return dbP === p || dbP === '0' + p || '0' + dbP === p;
+  });
+
+  if (user && String(user.Password).trim() === String(data.password).trim()) {
+    return { success: true, user: user };
+  }
+  return { success: false, message: "Invalid credentials" };
+}
+
+function handleRegister(ss, data) {
+  const members = getSheetData(ss, SHEETS.MEMBERS);
+  const p = String(data.Phone).trim();
+  
+  if (members.some(m => String(m.Phone).trim() === p)) {
+    return { success: false, message: "Phone already exists" };
+  }
+  
+  return addRow(ss, SHEETS.MEMBERS, data);
+}
+
+// --- GENERIC CRUD HELPERS ---
+
+function addRow(ss, sheetName, data) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: "Sheet not found" };
+  
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const row = headers.map(header => {
+    // Check if data has key (case insensitive)
+    const key = Object.keys(data).find(k => k.toLowerCase() === header.toLowerCase());
+    const val = key ? data[key] : '';
+    // Handle Arrays/Objects for storage
+    return (typeof val === 'object' && val !== null) ? JSON.stringify(val) : val;
+  });
+  
+  sheet.appendRow(row);
+  return { success: true, message: "Record added successfully" };
+}
+
+function addDepartment(ss, data) {
+  const sheet = ss.getSheetByName(SHEETS.DEPARTMENTS);
+  const existing = getSheetData(ss, SHEETS.DEPARTMENTS);
+  
+  // Prevent duplicate departments
+  if (existing.some(d => d.Name.toLowerCase() === data.Name.toLowerCase())) {
+    return { success: true, message: "Department already exists" };
+  }
+  
+  sheet.appendRow([data.Name]);
+  return { success: true, message: "Department added" };
+}
+
+function updateRow(ss, sheetName, idColName, idValue, data) {
+  const sheet = ss.getSheetByName(sheetName);
+  const dataRange = sheet.getDataRange();
+  const values = dataRange.getValues();
+  const headers = values[0];
+  
+  // Find ID column index
+  const idColIndex = headers.findIndex(h => h.toLowerCase() === idColName.toLowerCase());
+  if (idColIndex === -1) return { success: false, message: "ID column not found" };
+  
+  // Find Row to Update
+  const rowIndex = values.findIndex(row => String(row[idColIndex]) === String(idValue));
+  if (rowIndex === -1) return { success: false, message: "Record not found" };
+  
+  const rowNum = rowIndex + 1; // 1-based index
+  
+  // Prepare updates
+  headers.forEach((header, colIndex) => {
+    const key = Object.keys(data).find(k => k.toLowerCase() === header.toLowerCase());
+    if (key) {
+      let val = data[key];
+      if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
+      sheet.getRange(rowNum, colIndex + 1).setValue(val);
+    }
+  });
+  
+  return { success: true, message: "Updated successfully" };
+}
+
+/**
+ * --- ROBUST DELETE FUNCTION ---
+ * 1. Finds the column by name (e.g., 'ID' or 'Name').
+ * 2. Scans that column for the value.
+ * 3. Deletes the specific row.
+ * 4. Returns success/failure clearly.
+ */
+function deleteRow(ss, sheetName, idColName, idValue) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, message: `Sheet '${sheetName}' missing.` };
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  // 1. Identify the column index to search (ID, Name, etc.)
+  const colIndex = headers.findIndex(h => h.toLowerCase() === idColName.toLowerCase());
+  if (colIndex === -1) return { success: false, message: `Column '${idColName}' not found.` };
+  
+  // 2. Find the row index (Looping backwards is safer for deletes, but here we delete one specific ID)
+  // We skip the header row (index 0)
+  for (let i = 1; i < data.length; i++) {
+    // String comparison to handle '123' vs 123
+    if (String(data[i][colIndex]) === String(idValue)) {
+      sheet.deleteRow(i + 1); // +1 because sheet rows are 1-based
+      return { success: true, message: "Deleted successfully" };
+    }
+  }
+  
+  return { success: false, message: "Record not found to delete." };
+}
+
+// --- UTILS ---
+
+function getSheetData(ss, sheetName) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return [];
+  
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows.shift(); // Remove header row
+  
+  return rows.map(row => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      // Normalize to Title Case or Camel Case if needed, but keeping raw header is safer
+      obj[header] = row[i];
+    });
+    return obj;
+  });
+}
+
+function responseJSON(content) {
+  return ContentService
+    .createTextOutput(JSON.stringify(content))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Checks if necessary sheets exist and creates headers if not.
+ * Ensures the database structure is always valid.
+ */
+function setupSheets(ss) {
+  const schema = {
+    [SHEETS.MEMBERS]: ['ID', 'Name', 'Phone', 'Password', 'Email', 'Gender', 'Role', 'Branch', 'Status', 'WelfareStatus', 'JoinDate', 'Occupation', 'MaritalStatus', 'DOB', 'Address', 'BaptismStatus', 'EmergencyContact', 'Education', 'IsFamilyHead', 'SpouseID', 'InvitedBy', 'Relatives', 'Dept'],
+    [SHEETS.FINANCE]: ['ID', 'Date', 'Type', 'Category', 'Amount', 'Description', 'MemberID', 'Method', 'Reference', 'Voided'],
+    [SHEETS.GROWTH]: ['ID', 'Name', 'Phone', 'Stage', 'DateWon', 'LastContact', 'AssignedTo', 'Notes', 'FoundationStep'],
+    [SHEETS.BRANCHES]: ['ID', 'Name', 'Location', 'HeadPastor', 'FoundedDate'],
+    [SHEETS.DEPARTMENTS]: ['Name'],
+    [SHEETS.REQUESTS]: ['ID', 'Date', 'Type', 'Content', 'Status', 'MemberID', 'Confidential']
+  };
+
+  Object.keys(schema).forEach(sheetName => {
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(schema[sheetName]); // Add Headers
+      // Optional: Freeze header
+      sheet.setFrozenRows(1);
+    }
+  });
+}
